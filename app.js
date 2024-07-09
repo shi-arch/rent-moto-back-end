@@ -7,7 +7,6 @@ const morgan = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const _ = require("lodash");
-const { createScheduledJob } = require("./src/utils/schedule");
 require("dotenv").config();
 
 // adding routers
@@ -67,7 +66,6 @@ const startServer = async () => {
   });
   // use routes
   app.use(onboardingRouters);
-  console.log(process.env.SERVER_1, 'cccccccccccccc')
 
   const stripe = require("stripe")(
     "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"
@@ -91,72 +89,6 @@ const startServer = async () => {
     .then(() => console.log("mongo db is connected....", process.env.DB_URL))
     .catch((err) => console.log("error occurs while connecting time", err));
 
-  const socketIds = []
-  let peers = [];
-  let camOff = [];
-  let usersCount = {
-    enableCam: 0,
-    disableCam: 0,
-    totalUserCount: 0,
-    activeUsersCount: 0
-  }
-  let skipCount = 0
-
-  const findAndUpdate = async (ids, isActive) => {
-    const arr = []
-    for (let i = 0; i < ids.length; i++) {
-      let ipAddress = ids[i]
-      const result = await Peers.updateOne(
-        { ipAddress: ipAddress },
-        {
-          $set: { isActive }
-        },
-        { new: true }
-      );
-      if (result) {
-        arr.push(result)
-      }
-    }
-    if(arr.length){
-      return arr
-    } else {
-      return false
-    }
-  }
-  const findActiveUserWithKey = async (myIp, userIp) => {
-    const obj = { activeUser: null, myData: null }
-    let myKeywords = [];
-    const findMyData = await Peers.findOne({ ipAddress: myIp, socketId: {$ne: ''} })
-    console.log(findMyData)
-    if (findMyData) {
-      myKeywords = findMyData.keyWords && findMyData.keyWords.split(",") || []
-      obj.myData = findMyData
-    }
-    const allPeers = await Peers.find({ isActive: true, socketId: {$ne: ''} })
-    for (let i = 0; i < allPeers.length; i++) {
-      let peer = allPeers[i]
-      if (peer.ipAddress !== myIp && peer.ipAddress != userIp) {
-        let arr = peer.keyWords && peer.keyWords.split(",") || []
-        if (myKeywords.length || arr.length) {
-          let matches = myKeywords.filter(value => arr.includes(value));
-          if (matches && matches.length) {
-            obj.activeUser = peer
-            break;
-          }
-        } else {
-          obj.activeUser = peer
-          break;
-        }
-      }
-    }
-    return obj
-  }
-  const broadcastEventTypes = {
-    ACTIVE_USERS: 'ACTIVE_USERS',
-    GROUP_CALL_ROOMS: 'GROUP_CALL_ROOMS',
-    INACTIVE_USERS: 'INACTIVE_USERS',
-    CAMERA_OFF: 'CAMERA_OFF',
-  };
   io.on("connection", async (socket) => {
     socket.on("typing", (o) => {
       socket.in(o.id).emit("typing", o.name)
@@ -214,12 +146,6 @@ const startServer = async () => {
       }
     });
   })
-  const dateStr = "2023-02-28 16:43";
-  const myDate = new Date(dateStr);
-  const myTask = () => {
-    console.log("Facebook schedule was posted");
-  };
-  createScheduledJob("Facebook", myTask, myDate);
 };
 
 startServer();
