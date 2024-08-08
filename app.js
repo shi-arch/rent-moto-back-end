@@ -11,9 +11,6 @@ require("dotenv").config();
 
 // adding routers
 const onboardingRouters = require("./src/api/onboarding/routers/routers.model");
-const ActiveUser = require("./src/db/schemas/onboarding/active-users.schema");
-const User = require("./src/db/schemas/onboarding/user.schema");
-const Peers = require("./src/db/schemas/onboarding/peers.schema");
 
 async function logs(data) {
   console.log(`${new Date().toISOString()} - ${data}`);
@@ -105,44 +102,12 @@ const startServer = async () => {
       socket.in(id).emit("endCall")
     });
     socket.emit('connection', null);
-    socket.on('update-name', (o) => {
-      const { name, socketId } = o
-      peers = peers.map(peer => {
-        if (peer.socketId === socketId) {
-          peer.username = name
-        }
-        return peer
-      })
-      console.log(peers, 'update name peers >>>>>>>>>>')
-      io.sockets.emit('broadcast', {
-        event: broadcastEventTypes.ACTIVE_USERS,
-        activeUsers: peers
-      });
-      if (camOff.length) {
-        camOff = camOff.map(cam => {
-          if (cam.socketId === socketId) {
-            cam.username = name
-          }
-          return cam
-        })
-        io.sockets.emit('broadcast', {
-          event: broadcastEventTypes.CAMERA_OFF,
-          activeUsers: camOff
-        });
-      }
-    })
-    socket.on('end-call', (socketId) => {
-      const find = peers.find(o => o.socketId == socketId)
-      if (find) {
-        io.to(find.socketId).emit('end-call');
-      }
-    });
     socket.on('disconnect', async () => {
-      const find = peers.find(peer => peer.socketId === socket.id)
+      //const find = peers.find(peer => peer.socketId === socket.id)
       if (find) {
         logs(`offline user socket id ${JSON.stringify(find)}`)
-        peers = peers.filter(peer => peer.socketId !== find.socketId)
-        logs(`newtwork gone ${JSON.stringify(peers)}`)
+        //peers = peers.filter(peer => peer.socketId !== find.socketId)
+        //logs(`newtwork gone ${JSON.stringify(peers)}`)
       }
     });
   })

@@ -1,4 +1,4 @@
-const { getTokens, getUserPeersData, earlyAccess, pushNotification, updateUser, saveUser, getUserProfile, createConfig, getConfig, getPreferences, updatePreferences, createPlan, searchUser, updateImage, getUserByContact } = require("../models/account.model");
+const { getTokens,verify, verification, getUserPeersData, earlyAccess, pushNotification, updateUser, saveUser, getUserProfile, createConfig, getConfig, getPreferences, updatePreferences, createPlan, searchUser, updateImage, getUserByContact } = require("../models/account.model");
 
 exports.updateUser = async (req, res) => {
   try {
@@ -46,8 +46,8 @@ exports.updateImage = async (req, res) => {
 
 exports.getUserByContact = async (req, res) => {
   try {
-    req.body['userId'] = req.user.id
-    const result = await getUserByContact(req.body.Contacts);
+    //req.body['userId'] = req.user.id
+    const result = await getUserByContact(req.body.contact);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({
@@ -58,6 +58,40 @@ exports.getUserByContact = async (req, res) => {
     });
   }
 }
+
+exports.verification = async (req, res) => {
+  try {
+    //req.body['userId'] = req.user.id
+    const result = await verification(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+exports.verify = async (req, res) => {
+  try {
+    //req.body['userId'] = req.user.id
+    const result = await verify(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
+
+
 
 
 
