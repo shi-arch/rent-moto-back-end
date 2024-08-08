@@ -55,7 +55,7 @@ const startServer = async () => {
   });
   // test api
   app.get("/", (req, res) => {
-    res.send("Hi there, Welcome to Vibezone");
+    res.send("Hi there, Welcome to rent Moto");
   });
 
   app.get("/test", (req, res) => {
