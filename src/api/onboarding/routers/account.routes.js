@@ -8,6 +8,10 @@ router.post("/profile", auth(), async (req, res) => {
   accountService.updateUser(req, res);
 });
 
+router.post("/image-upload", upload.single('profileImg'), async (req, res) => {
+  accountService.updateImage(req, res);
+});
+
 router.post("/signup", async (req, res) => {
   accountService.saveUser(req, res);
 });

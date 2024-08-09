@@ -31,7 +31,6 @@ exports.saveUser = async (req, res) => {
 
 exports.updateImage = async (req, res) => {
   try {
-    req.body['userId'] = req.user.id
     const result = await updateImage(req);
     return res.status(200).json(result);
   } catch (err) {

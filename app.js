@@ -59,7 +59,7 @@ const startServer = async () => {
   });
 
   app.get("/test", (req, res) => {
-    res.send("Hi Shivram, Welcome to Vibezone");
+    res.send("Hi Shivram, Welcome to rent Moto");
   });
   // use routes
   app.use(onboardingRouters);
