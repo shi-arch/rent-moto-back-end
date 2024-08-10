@@ -26,7 +26,7 @@ const server = app.listen(
 const io = require("socket.io")(server, {
   pingTimeout: 60000,
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://main--vibe-zone.netlify.app', 'https://vibe-zone.netlify.app', 'https://vibezone.in']
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://rent-moto-front-end.vercel.app', 'https://vibe-zone.netlify.app', 'https://vibezone.in']
   },
 });
 const startServer = async () => {
@@ -45,7 +45,7 @@ const startServer = async () => {
   );
 
   app.use(
-    cors({ origin: ['http://localhost:3000', 'https://main--vibe-zone.netlify.app', 'https://vibe-zone.netlify.app', 'https://vibezone.in'] })
+    cors({ origin: ['http://localhost:3000', 'https://main--vibe-zone.netlify.app', 'https://rent-moto-front-end.vercel.app', 'https://vibezone.in'] })
   );
   app.use((req, res, next) => {
     //res.header("Access-Control-Allow-Origin",process.env.BASE_URL);
