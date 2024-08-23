@@ -6,6 +6,15 @@ const bookingSchema = new Schema({
         type: String,
         required: true
     },
+    bookingAmount: {
+        type: String,
+        required: true
+    },    
+    contact: {
+        type: String,
+        required: true,
+        trim: true
+    },
     BookingStartDateAndTime: {
         type: Object
     },

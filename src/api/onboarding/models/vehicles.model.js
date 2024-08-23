@@ -64,13 +64,13 @@ async function createVehicle({ pricePerday, subLocation, location, name, url, di
 
 async function booking(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const { BookingStartDateAndTime, BookingEndDateAndTime, vehicleNumber, vehicleId } = o
+  const { BookingStartDateAndTime, BookingEndDateAndTime, vehicleNumber, vehicleId, contact, bookingAmount } = o
   const result = await Booking.findOne({ vehicleNumber });
   if (result) {
     await Booking.updateOne(
       { vehicleNumber },
       {
-        $set: { BookingStartDateAndTime, BookingEndDateAndTime, isBooked: true }
+        $set: { BookingStartDateAndTime, BookingEndDateAndTime, isBooked: true, contact, bookingAmount }
       },
       { new: true }
     );

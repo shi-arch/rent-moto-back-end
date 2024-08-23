@@ -12,6 +12,9 @@ const errorMessages = require("../errors/errors");
 const { sendMessage } = require("../../../utils/Phone");
 const User = require("../../../db/schemas/onboarding/user.schema");
 const Traffic = require("../../../db/schemas/onboarding/traffic.schema ");
+const { booking } = require("../services/vehicles.service");
+const Booking = require("../../../db/schemas/onboarding/booking.schema");
+const Vehicle = require("../../../db/schemas/onboarding/vehicle.schema");
 
 
 const transporter = nodemailer.createTransport({
@@ -106,7 +109,23 @@ async function getUserByContact(contact) {
   try {
     const result = await User.findOne({ contact });
     if (result) {
-      obj.data.push(result)
+      console.log(result)
+      const findBookings = await Booking.find({ contact });      
+      if(findBookings && findBookings.length){
+        let arr = []
+        for(let i = 0; i < findBookings.length; i++){
+          const o = findBookings[i]
+          const vehicleData = await Vehicle.findOne({ _id: ObjectId(o.vehicleId) });
+          arr.push({bookingData: o, vehicleData: vehicleData})
+        }
+        const responseData = {  
+          ...result._doc,
+          bookings: arr
+          //vehicleData: arr
+        }
+        obj.data = responseData
+      }
+      
     } else {
       obj.status = 401
       obj.message = "data not found"
