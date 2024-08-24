@@ -110,7 +110,8 @@ async function getUserByContact(contact) {
     const result = await User.findOne({ contact });
     if (result) {
       console.log(result)
-      const findBookings = await Booking.find({ contact });      
+      const findBookings = await Booking.find({ contact });  
+      obj.data = result._doc  
       if(findBookings && findBookings.length){
         let arr = []
         for(let i = 0; i < findBookings.length; i++){
@@ -118,14 +119,8 @@ async function getUserByContact(contact) {
           const vehicleData = await Vehicle.findOne({ _id: ObjectId(o.vehicleId) });
           arr.push({bookingData: o, vehicleData: vehicleData})
         }
-        const responseData = {  
-          ...result._doc,
-          bookings: arr
-          //vehicleData: arr
-        }
-        obj.data = responseData
-      }
-      
+        obj.data = {...obj.data, bookings: arr}
+      }      
     } else {
       obj.status = 401
       obj.message = "data not found"
