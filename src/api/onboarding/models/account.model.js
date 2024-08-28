@@ -104,10 +104,15 @@ async function getUserProfile(userId) {
   }
 }
 
-async function getUserByContact(contact) {
+async function getUserByContact(body) {
   const obj = { status: 200, message: "data fetched successfully", data: [] };
+  const {contact, userType} = body
+  const o = {contact}
+  if(userType){
+    o.userType = userType
+  }
   try {
-    const result = await User.findOne({ contact });
+    const result = await User.findOne({ ...o });
     if (result) {
       console.log(result)
       const findBookings = await Booking.find({ contact });  

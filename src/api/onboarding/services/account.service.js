@@ -46,7 +46,7 @@ exports.updateImage = async (req, res) => {
 exports.getUserByContact = async (req, res) => {
   try {
     //req.body['userId'] = req.user.id
-    const result = await getUserByContact(req.body.contact);
+    const result = await getUserByContact(req.body);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({

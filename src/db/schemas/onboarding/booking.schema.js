@@ -12,7 +12,6 @@ const bookingSchema = new Schema({
     },    
     contact: {
         type: String,
-        required: true,
         trim: true
     },
     BookingStartDateAndTime: {

@@ -12,7 +12,7 @@ const Location = require("../../../db/schemas/onboarding/location.schema");
 const Booking = require("../../../db/schemas/onboarding/booking.schema");
 
 
-async function createVehicle({ pricePerday, subLocation, location, name, url, distanceLimit, accessChargePerKm, vehicleNumber, pickupLocation, transmissionType, brand, BookingStartDateAndTime, BookingEndDateAndTime, isBooked }) {
+async function createVehicle({ pricePerday, subLocation, location, name, url, distanceLimit, accessChargePerKm, vehicleNumber, pickupLocation, transmissionType, brand, BookingStartDateAndTime, BookingEndDateAndTime, bookingCount, isBooked, bookingAmount,contact }) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   const result = await Booking.findOne({ vehicleNumber: vehicleNumber });
   if (result) {
@@ -44,14 +44,14 @@ async function createVehicle({ pricePerday, subLocation, location, name, url, di
       _id = veRes._doc._id
     } else {
       const vehicleObj = {
-        pricePerday, name, url, distanceLimit, accessChargePerKm, transmissionType, brand
+        pricePerday, name, url, distanceLimit, accessChargePerKm, transmissionType, brand, bookingCount
       }
       const resultData = new Vehicle({ ...vehicleObj });
       _id = resultData._doc._id
       await resultData.save();
     }
     const bookingObj = {
-      vehicleNumber, BookingStartDateAndTime, BookingEndDateAndTime, isBooked: false, vehicleId: _id, location, pickupLocation
+      vehicleNumber, BookingStartDateAndTime, BookingEndDateAndTime, isBooked: false, vehicleId: _id, location, pickupLocation, bookingAmount, contact
     }
     const bookingResponse = new Booking({ ...bookingObj });
     await bookingResponse.save();
