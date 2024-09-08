@@ -20,6 +20,10 @@ router.get("/getMessages/:chatId", auth(), async (req, res) => {
   vehiclesService.getMessages(req, res);
 })
 
+router.get("/getAllVehicles", async (req, res) => {
+  vehiclesService.getAllVehicles(req, res);
+})
+
 router.get("/getLocations", async (req, res) => {
   vehiclesService.getLocations(req, res);
 })

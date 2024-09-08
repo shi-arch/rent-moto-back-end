@@ -103,7 +103,7 @@ const startServer = async () => {
     });
     socket.emit('connection', null);
     socket.on('disconnect', async () => {
-      //const find = peers.find(peer => peer.socketId === socket.id)
+      const find = peers.find(peer => peer.socketId === socket.id)
       if (find) {
         logs(`offline user socket id ${JSON.stringify(find)}`)
         //peers = peers.filter(peer => peer.socketId !== find.socketId)

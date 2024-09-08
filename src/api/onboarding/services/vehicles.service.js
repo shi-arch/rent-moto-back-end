@@ -4,6 +4,7 @@ const {
   searchVehicle,
   getMessages,
   booking,
+  getAllVehicles,
   getLocations
 } = require("../models/vehicles.model");
 
@@ -98,3 +99,19 @@ exports.getMessages = async (req, res) => {
     });
   }
 }
+
+exports.getAllVehicles = async (req, res) => {
+  try {
+    const result = await getAllVehicles();
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+

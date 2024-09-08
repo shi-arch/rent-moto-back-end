@@ -189,6 +189,28 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
   return obj
 }
 
+async function getAllVehicles() {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const response = await Booking.find({})
+  if (response && response.length) {
+    const finalArr = []
+    for (let i = 0; i < response.length; i++) {
+      const { _doc } = response[i]
+      const o = _doc
+      let vehicleRes = await Vehicle.findOne({ ObjectId: ObjectId(o.vehicleId) })
+      if (vehicleRes) {
+        vehicleRes = vehicleRes._doc
+        finalArr.push({ ...vehicleRes, ...o })
+      }
+    }
+    obj.data = finalArr
+  } else {
+    obj.status = 401
+    obj.message = "data not found"
+  }
+  return obj
+}
+
 
 async function getLocations() {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
@@ -230,6 +252,7 @@ async function getMessages(chatId) {
 
 module.exports = {
   createVehicle,
+  getAllVehicles,
   createLocation,
   searchVehicle,
   getLocations,
