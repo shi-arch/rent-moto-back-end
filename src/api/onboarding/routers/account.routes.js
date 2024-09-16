@@ -8,6 +8,10 @@ router.post("/profile", auth(), async (req, res) => {
   accountService.updateUser(req, res);
 });
 
+router.get("/getAllUsers", async (req, res) => {
+  accountService.getAllUsers(req, res);
+});
+
 router.post("/image-upload", upload.single('profileImg'), async (req, res) => {
   accountService.updateImage(req, res);
 });

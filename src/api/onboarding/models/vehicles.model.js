@@ -195,9 +195,9 @@ async function getAllVehicles() {
   if (response && response.length) {
     const finalArr = []
     for (let i = 0; i < response.length; i++) {
-      const { _doc } = response[i]
-      const o = _doc
-      let vehicleRes = await Vehicle.findOne({ ObjectId: ObjectId(o.vehicleId) })
+      let { _doc } = response[i]
+      let o = _doc
+      let vehicleRes = await Vehicle.findOne({ _id: ObjectId(o.vehicleId  ) })
       if (vehicleRes) {
         vehicleRes = vehicleRes._doc
         finalArr.push({ ...vehicleRes, ...o })

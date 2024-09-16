@@ -53,6 +53,20 @@ async function updateUser({ userId, profileImage, name, contact, userName, statu
   }
 }
 
+async function getAllUsers() {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const response = await User.find({})
+  if (response && response.length) {    
+    obj.data = response
+  } else {
+    obj.status = 401
+    obj.message = "data not found"
+  }
+  return obj
+}
+
+
+
 async function saveUser(o) {
   const obj = { status: "200", message: "data fetched successfully", data: [] }
   try {
@@ -235,6 +249,7 @@ async function searchUser(data) {
 module.exports = {
   verification,
   verify,
+  getAllUsers,
   updateUser,
   saveUser,
   getUserProfile,
