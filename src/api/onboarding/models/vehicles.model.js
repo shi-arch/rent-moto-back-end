@@ -10,33 +10,66 @@ const ObjectId = mongoose.Types.ObjectId;
 const Vehicle = require("../../../db/schemas/onboarding/vehicle.schema");
 const Location = require("../../../db/schemas/onboarding/location.schema");
 const Booking = require("../../../db/schemas/onboarding/booking.schema");
+const BookingDuration = require("../../../db/schemas/onboarding/bookingDuration.schema");
 
-
-async function createVehicle({ pricePerday, subLocation, location, name, url, distanceLimit, accessChargePerKm, vehicleNumber, pickupLocation, transmissionType, brand, BookingStartDateAndTime, BookingEndDateAndTime, bookingCount, isBooked, bookingAmount,contact }) {
+const createBookingDuration = async ({ bookingDuration, attachedVehicles }) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const result = await Booking.findOne({ vehicleNumber: vehicleNumber });
+  if (bookingDuration && bookingDuration.label) {
+    const result = await BookingDuration.findOne({ 'bookingDuration.label': bookingDuration.label });
+    if (result) {
+      obj.status = 401
+      obj.message = "same booking duration cannot be repeated"
+    } else {
+      const obj = { attachedVehicles: attachedVehicles && attachedVehicles.length ? attachedVehicles : [], bookingDuration }
+      const result = new BookingDuration(obj);
+      await result.save();
+      obj.message = "data saved successfully"
+    }
+  } else {
+    obj.message = "Invalid data",
+      obj.status = "401"
+  }
+  return obj
+}
+
+
+async function createVehicle({ pricePerday, location, name, url, distanceLimit, accessChargePerKm, vehicleNumber, pickupLocation, transmissionType, brand, BookingStartDateAndTime, BookingEndDateAndTime, bookingCount, isBooked, bookingAmount, contact, bookingDuration }) {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const result = await Booking.findOne({ vehicleNumber });
+  let bookingDurationObj = bookingDuration ? bookingDuration : {}
   if (result) {
+    const updateVehicle = {}
+    pricePerday ? updateVehicle.pricePerday = pricePerday : ""
+    url ? updateVehicle.url = url : ""
+    url ? updateVehicle.distanceLimit = distanceLimit : ""
+    url ? updateVehicle.accessChargePerKm = accessChargePerKm : ""
+    url ? updateVehicle.transmissionType = transmissionType : ""
+    url ? updateVehicle.brand = brand : ""
+    url ? updateVehicle.name = name : ""
+    await Vehicle.updateOne(
+      { _id: ObjectId(result._doc.vehicleId) },
+      {
+        $set: updateVehicle
+      },
+      { new: true }
+    );
     const updateObj = {}
+    bookingDuration ? updateObj.bookingDuration = bookingDuration : {}
     BookingStartDateAndTime ? updateObj.BookingStartDateAndTime = BookingStartDateAndTime : ""
     BookingEndDateAndTime ? updateObj.BookingEndDateAndTime = BookingEndDateAndTime : ""
     isBooked ? updateObj.isBooked = isBooked : ""
     location ? updateObj.location = location : ""
-    subLocation ? updateObj.subLocation = subLocation : ""
+    pickupLocation ? updateObj.pickupLocation = pickupLocation : ""
     vehicleNumber ? updateObj.vehicleNumber = vehicleNumber : ""
-    if (Object.keys(updateObj).length) {
-      await Booking.updateOne(
-        { vehicleNumber: vehicleNumber },
-        {
-          $set: updateObj
-        },
-        { new: true }
-      );
-      obj.status = 201
-      obj.message = "Updated Successfully"
-    } else {
-      obj.status = 401
-      obj.message = "Nothing to update"
-    }
+    await Booking.updateOne(
+      { vehicleNumber: vehicleNumber },
+      {
+        $set: updateObj
+      },
+      { new: true }
+    );
+    obj.status = 201
+    obj.message = "Updated Successfully"
   } else {
     const veRes = await Vehicle.findOne({ name });
     let _id = ""
@@ -44,20 +77,19 @@ async function createVehicle({ pricePerday, subLocation, location, name, url, di
       _id = veRes._doc._id
     } else {
       const vehicleObj = {
-        pricePerday, name, url, distanceLimit, accessChargePerKm, transmissionType, brand, bookingCount
+        pricePerday, name, url, distanceLimit, accessChargePerKm, transmissionType, brand, bookingCount: bookingCount ? bookingCount : 0
       }
       const resultData = new Vehicle({ ...vehicleObj });
       _id = resultData._doc._id
       await resultData.save();
     }
     const bookingObj = {
-      vehicleNumber, BookingStartDateAndTime, BookingEndDateAndTime, isBooked: false, vehicleId: _id, location, pickupLocation, bookingAmount, contact
+      bookingDuration: bookingDurationObj, vehicleNumber, BookingStartDateAndTime, BookingEndDateAndTime, isBooked: false, vehicleId: _id, location, pickupLocation, bookingAmount, contact
     }
     const bookingResponse = new Booking({ ...bookingObj });
     await bookingResponse.save();
     obj.status = 200
     obj.message = "data saved successfully"
-
   }
   return obj
 }
@@ -76,7 +108,7 @@ async function booking(o) {
     );
     const vehicleObj = await Vehicle.findOne({ _id: ObjectId(vehicleId) });
     if (vehicleObj) {
-      const {_doc} = vehicleObj
+      const { _doc } = vehicleObj
       let bookingCount = parseInt(_doc.bookingCount) + 1
       await Vehicle.updateOne(
         { _id: ObjectId(vehicleId) },
@@ -95,7 +127,7 @@ async function booking(o) {
 
 
 
-async function searchVehicle({ name, pickupLocation, brand, transmissionType, location, startDate, startTime, endDate, endTime, sort, mostBooked }) {
+async function searchVehicle({ name, pickupLocation, brand, transmissionType, location, startDate, startTime, endDate, endTime, sort, mostBooked, bookingDuration }) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   let momStartTime = moment(startTime, "hh:mm A");
   let momEndTime = moment(endTime, "hh:mm A");
@@ -126,7 +158,11 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
       if (location) {
         bookFilter.location = location
       }
+      if (bookingDuration) {
+        bookFilter.bookingDuration = bookingDuration
+      }
       const bookRes = await Booking.find(bookFilter)
+
       if (bookRes.length) {
         let getInitElement = ""
         let vehicleCount = 0
@@ -178,7 +214,7 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
     } else {
       finalArr.sort((a, b) => b.pricePerday - a.pricePerday);
     }
-    if(mostBooked){
+    if (mostBooked) {
       finalArr.sort((a, b) => b.bookingCount - a.bookingCount);
     }
     obj.data = finalArr
@@ -197,7 +233,7 @@ async function getAllVehicles() {
     for (let i = 0; i < response.length; i++) {
       let { _doc } = response[i]
       let o = _doc
-      let vehicleRes = await Vehicle.findOne({ _id: ObjectId(o.vehicleId  ) })
+      let vehicleRes = await Vehicle.findOne({ _id: ObjectId(o.vehicleId) })
       if (vehicleRes) {
         vehicleRes = vehicleRes._doc
         finalArr.push({ ...vehicleRes, ...o })
@@ -226,17 +262,44 @@ async function getLocations() {
   return obj
 }
 
-
-async function createLocation({ myLocation, subLocation }) {
+async function getAllBookingDuration() {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const result = await Location.findOne({ myLocation });
+  const result = await BookingDuration.find({});
   if (result) {
-    obj.status = 401
-    obj.message = "same location cannot be repeated"
+    obj.status = 200
+    obj.data = result
+    obj.message = "data get successfully"
   } else {
-    const result = new Location({ myLocation, subLocation });
-    await result.save();
-    obj.message = "data saved successfully"
+    obj.status = 401
+    obj.message = "data get successfully"
+  }
+  return obj
+}
+
+
+async function createLocation({ myLocation, subLocation, url }) {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  if (myLocation && subLocation && subLocation.length && url) {
+    const result = await Location.findOne({ myLocation });
+    if (result) {
+      await Location.updateOne(
+        { myLocation },
+        {
+          $set: {myLocation, subLocation, url}
+        },
+        { new: true }
+      );
+      obj.status = 201
+      obj.message = "Updated Successfully"
+      
+    } else {
+      const result = new Location({ myLocation, subLocation, url });
+      await result.save();
+      obj.message = "data saved successfully"
+    }
+  } else {
+    obj.status = 401
+    obj.message = "Invalid data"
   }
   return obj
 }
@@ -251,6 +314,8 @@ async function getMessages(chatId) {
 
 
 module.exports = {
+  createBookingDuration,
+  getAllBookingDuration,
   createVehicle,
   getAllVehicles,
   createLocation,

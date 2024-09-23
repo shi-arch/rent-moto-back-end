@@ -4,7 +4,7 @@ const auth = require("../../../middlewares/auth/index")
 const upload = require('../../../utils/file-upload/file-upload');
 
 // Update User
-router.post("/profile", auth(), async (req, res) => {
+router.post("/profile", async (req, res) => {
   accountService.updateUser(req, res);
 });
 

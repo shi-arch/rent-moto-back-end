@@ -2,7 +2,7 @@ const { getTokens,verify, getAllUsers, verification, getUserPeersData, earlyAcce
 
 exports.updateUser = async (req, res) => {
   try {
-    req.body['userId'] = req.user.id
+    //req.body['userId'] = req.user.id
     const result = await updateUser(req.body);
     return res.status(200).json(result);
   } catch (err) {

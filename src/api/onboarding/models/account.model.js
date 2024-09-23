@@ -27,26 +27,30 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-async function updateUser({ userId, profileImage, name, contact, userName, status, gender, dob, email }) {
-  // update this data in database
+async function updateUser({ _id, userType, firstName, contact, lastName, email }) {
+  const o = { status: 200, message: "data fetched successfully", data: [] }
   try {
-    await User.updateOne(
-      { _id: ObjectId(userId) },
-      {
-        $set: {
-          profileImage,
-          name,
-          contact,
-          userName,
-          status,
-          gender,
-          dob,
-          email
-        }
-      },
-      { new: true }
-    );
-
+    const result = await User.findOne({ _id: ObjectId(_id) })
+    if(result){
+      const obj = {
+        userType: userType ? userType : "USER",
+        firstName: firstName ? firstName : "",
+        lastName: lastName ? lastName : "",
+        contact: contact ? contact : "",
+        email: email ? email : ""
+      }
+      await User.updateOne(
+        { _id: ObjectId(_id) },
+        {
+          $set: obj 
+        },
+        { new: true }
+      );
+      o.message = "user updated successfully"
+    } else {
+      o.message = "Invalid details",
+      o.status = "401"
+    }
     return "Updated Successfully";
   } catch (error) {
     throw new Error(error);
@@ -122,13 +126,13 @@ async function getUserByContact(body) {
   const obj = { status: 200, message: "data fetched successfully", data: [] };
   const {contact, userType} = body
   const o = {contact}
+  o.userType = 'USER'
   if(userType){
     o.userType = userType
   }
   try {
     const result = await User.findOne({ ...o });
     if (result) {
-      console.log(result)
       const findBookings = await Booking.find({ contact });  
       obj.data = result._doc  
       if(findBookings && findBookings.length){

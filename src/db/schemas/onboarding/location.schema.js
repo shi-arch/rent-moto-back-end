@@ -9,6 +9,10 @@ const locationSchema = new Schema({
     subLocation: {
       type: Array,
       required: true
+    },
+    url: {
+      type: String,
+      required: true
     }
   }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
   
