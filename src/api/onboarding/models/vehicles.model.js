@@ -12,13 +12,49 @@ const Location = require("../../../db/schemas/onboarding/location.schema");
 const Booking = require("../../../db/schemas/onboarding/booking.schema");
 const BookingDuration = require("../../../db/schemas/onboarding/bookingDuration.schema");
 
-const createBookingDuration = async ({ bookingDuration, attachedVehicles }) => {
+const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookingId }) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   if (bookingDuration && bookingDuration.label) {
-    const result = await BookingDuration.findOne({ 'bookingDuration.label': bookingDuration.label });
+    let result = await BookingDuration.findOne({ 'bookingDuration.label': bookingDuration.label });
     if (result) {
-      obj.status = 401
-      obj.message = "same booking duration cannot be repeated"
+      result = result._doc
+      if (bookingId) {
+        if (result.attachedVehicles.length) {
+          const find = result.attachedVehicles.find(ele => ele == bookingId)
+          if (!find) {
+            const arr = result.attachedVehicles
+            arr.push(bookingId)
+            const updatePacket = {
+              "attachedVehicles": arr,
+            }
+            await BookingDuration.updateOne(
+              { _id: ObjectId(result._id) },
+              {
+                $set: updatePacket
+              },
+              { new: true }
+            );
+            obj.status = 201
+            obj.message = "Booking duration updated successfully"
+          } else {
+            obj.message = "Invalid data",
+              obj.status = "401"
+          }
+        } else {
+          await BookingDuration.updateOne(
+            { _id: ObjectId(result._id) },
+            {
+              $set: {"attachedVehicles": [bookingId]}
+            },
+            { new: true }
+          );
+          obj.status = 201
+          obj.message = "Booking duration updated successfully"
+        }
+      } else {
+        obj.message = "Invalid data",
+          obj.status = "401"
+      }
     } else {
       const obj = { attachedVehicles: attachedVehicles && attachedVehicles.length ? attachedVehicles : [], bookingDuration }
       const result = new BookingDuration(obj);
@@ -145,6 +181,21 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
   if (transmissionType) {
     filter.transmissionType = transmissionType
   }
+  let attachedDevices = []
+  if (bookingDuration) {
+    const result = await BookingDuration.findOne({ 'bookingDuration.label': bookingDuration });
+    attachedDevices = result._doc.attachedVehicles
+    if(!attachedDevices.length){
+      return {status: 200, message: "No data found", data: []}
+    }    
+  }
+  if (attachedDevices.length) {
+    attachedDevices = attachedDevices.map((obj) => {
+      return (
+        ObjectId(obj)
+      )
+    })
+  }
   const response = await Vehicle.find(filter)
   if (response && response.length) {
     const finalArr = []
@@ -158,11 +209,10 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
       if (location) {
         bookFilter.location = location
       }
-      if (bookingDuration) {
-        bookFilter.bookingDuration = bookingDuration
+      if (attachedDevices.length) {
+        bookFilter._id = { $in: attachedDevices }
       }
-      const bookRes = await Booking.find(bookFilter)
-
+      let bookRes = await Booking.find(bookFilter)
       if (bookRes.length) {
         let getInitElement = ""
         let vehicleCount = 0
@@ -285,13 +335,13 @@ async function createLocation({ myLocation, subLocation, url }) {
       await Location.updateOne(
         { myLocation },
         {
-          $set: {myLocation, subLocation, url}
+          $set: { myLocation, subLocation, url }
         },
         { new: true }
       );
       obj.status = 201
       obj.message = "Updated Successfully"
-      
+
     } else {
       const result = new Location({ myLocation, subLocation, url });
       await result.save();
