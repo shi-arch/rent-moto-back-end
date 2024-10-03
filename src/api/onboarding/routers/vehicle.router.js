@@ -40,4 +40,12 @@ router.post("/booking", async (req, res) => {
   vehiclesService.booking(req, res);
 })
 
+router.post("/createOrder", async (req, res) => {
+  vehiclesService.createOrder(req, res);
+})
+
+router.get("/getOrders", async (req, res) => {
+  vehiclesService.getOrders(req, res);
+})
+
 module.exports = router;

@@ -4,6 +4,8 @@ const {
   searchVehicle,
   getMessages,
   getAllBookingDuration,
+  createOrder,
+  getOrders,
   booking,
   getAllVehicles,
   getLocations,
@@ -96,6 +98,38 @@ exports.booking = async (req, res) => {
     });
   }
 }
+
+exports.createOrder = async (req, res) => {
+  try {
+    const result = await createOrder(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+exports.getOrders = async (req, res) => {
+  try {
+    const result = await getOrders();
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
+
+
 
 
 

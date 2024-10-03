@@ -24,7 +24,7 @@ const server = app.listen(
 );
 
 const io = require("socket.io")(server, {
-  pingTimeout: 60000,
+  //pingTimeout: 60000,
   cors: {
     origin: ['http://localhost:3000', 'http://localhost:3001', 'https://rent-moto-admin.vercel.app', 'https://rent-moto-front-end.vercel.app']
   },

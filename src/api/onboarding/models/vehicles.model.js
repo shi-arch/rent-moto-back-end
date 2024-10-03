@@ -11,6 +11,7 @@ const Vehicle = require("../../../db/schemas/onboarding/vehicle.schema");
 const Location = require("../../../db/schemas/onboarding/location.schema");
 const Booking = require("../../../db/schemas/onboarding/booking.schema");
 const BookingDuration = require("../../../db/schemas/onboarding/bookingDuration.schema");
+const Order = require("../../../db/schemas/onboarding/order.schema");
 
 const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookingId }) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
@@ -44,7 +45,7 @@ const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookin
           await BookingDuration.updateOne(
             { _id: ObjectId(result._id) },
             {
-              $set: {"attachedVehicles": [bookingId]}
+              $set: { "attachedVehicles": [bookingId] }
             },
             { new: true }
           );
@@ -161,6 +162,42 @@ async function booking(o) {
   return obj
 }
 
+async function createOrder(o) {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const { vehicleNumber, vehicleName, endDate, endTime, startDate, startTime, pickupLocation, location,
+    paymentStatus, paymentMethod, userName, email, contact, submittedDocument, _id, vehicleImage } = o
+  if (vehicleNumber && vehicleName && endDate && endTime && startDate && startTime && pickupLocation && location &&
+    paymentStatus && paymentMethod && userName && email && contact && submittedDocument && vehicleImage) {
+    if (_id) {
+      const result = await Order.findOne({ _id: ObjectId(_id) });
+      if (result) {
+        await Order.updateOne(
+          { _id: ObjectId(_id) },
+          {
+            $set: { ...o }
+          },
+          { new: true }
+        );
+        obj.message = "data updated successfully"
+      } else {
+        const result = new Order({ ...o });
+        await result.save();
+        obj.message = "data saved successfully"
+      }
+    } else {
+      const result = new Order({ ...o });
+      await result.save();
+      obj.message = "data saved successfully"
+    }
+  } else {
+    obj.status = 401
+    obj.message = "Invalid data or something is missing"
+  }
+  return obj
+}
+
+
+
 
 
 async function searchVehicle({ name, pickupLocation, brand, transmissionType, location, startDate, startTime, endDate, endTime, sort, mostBooked, bookingDuration }) {
@@ -185,9 +222,9 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
   if (bookingDuration) {
     const result = await BookingDuration.findOne({ 'bookingDuration.label': bookingDuration });
     attachedDevices = result._doc.attachedVehicles
-    if(!attachedDevices.length){
-      return {status: 200, message: "No data found", data: []}
-    }    
+    if (!attachedDevices.length) {
+      return { status: 200, message: "No data found", data: [] }
+    }
   }
   if (attachedDevices.length) {
     attachedDevices = attachedDevices.map((obj) => {
@@ -312,6 +349,22 @@ async function getLocations() {
   return obj
 }
 
+async function getOrders() {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const result = await Order.find({});
+  if (result) {
+    obj.status = 200
+    obj.data = result
+    obj.message = "data get successfully"
+  } else {
+    obj.status = 401
+    obj.message = "data get successfully"
+  }
+  return obj
+}
+
+
+
 async function getAllBookingDuration() {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   const result = await BookingDuration.find({});
@@ -327,13 +380,13 @@ async function getAllBookingDuration() {
 }
 
 
-async function createLocation({ myLocation, subLocation, url }) {
+async function createLocation({ myLocation, subLocation, url, _id }) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   if (myLocation && subLocation && subLocation.length && url) {
-    const result = await Location.findOne({ myLocation });
+    const result = await Location.findOne({ _id: ObjectId(_id) });
     if (result) {
       await Location.updateOne(
-        { myLocation },
+        { _id: ObjectId(_id) },
         {
           $set: { myLocation, subLocation, url }
         },
@@ -367,7 +420,9 @@ module.exports = {
   createBookingDuration,
   getAllBookingDuration,
   createVehicle,
+  getOrders,
   getAllVehicles,
+  createOrder,
   createLocation,
   searchVehicle,
   getLocations,
