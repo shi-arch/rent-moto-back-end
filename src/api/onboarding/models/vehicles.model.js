@@ -1,12 +1,8 @@
-// import files
 const { sendEmail } = require("../../../utils/email/index");
 const { v4: uuidv4 } = require('uuid');
-// import packages
 const moment = require("moment");
 const { mongoose } = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
-
-// Schema Imports
 const Vehicle = require("../../../db/schemas/onboarding/vehicle.schema");
 const Location = require("../../../db/schemas/onboarding/location.schema");
 const Booking = require("../../../db/schemas/onboarding/booking.schema");
@@ -312,9 +308,10 @@ async function searchVehicle({ name, pickupLocation, brand, transmissionType, lo
   return obj
 }
 
-async function getAllVehicles() {
+async function getAllVehicles({page, limit}) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const response = await Booking.find({})
+  const offset = (page - 1) * limit;
+  const response = await Booking.find({}).skip(offset).limit(limit);
   if (response && response.length) {
     const finalArr = []
     for (let i = 0; i < response.length; i++) {
@@ -327,6 +324,7 @@ async function getAllVehicles() {
       }
     }
     obj.data = finalArr
+    obj.count = await Booking.find({}).countDocuments();
   } else {
     obj.status = 401
     obj.message = "data not found"

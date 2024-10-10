@@ -168,7 +168,7 @@ exports.getMessages = async (req, res) => {
 
 exports.getAllVehicles = async (req, res) => {
   try {
-    const result = await getAllVehicles();
+    const result = await getAllVehicles(req.body);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({
