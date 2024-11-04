@@ -19,13 +19,17 @@ router.post("/image-upload", upload.single('profileImg'), async (req, res) => {
 router.post("/signup", async (req, res) => {
   accountService.saveUser(req, res);
 });
+
+router.get("/getAllDataCount", async (req, res) => {
+  accountService.getAllDataCount(req, res);
+});
 // Update image
 router.post("/getUsersByContact", async (req, res) => {
   accountService.getUserByContact(req, res);
 });
 
 router.post("/sendOtp", async (req, res) => {
-  accountService.verification(req, res);
+  accountService.sendOtp(req, res);
 });
 
 router.post("/verifyOtp", async (req, res) => {

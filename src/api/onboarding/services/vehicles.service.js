@@ -1,16 +1,79 @@
 const {
   createVehicle,
   createLocation,
+  createStation,
+  createInvoice,
+  createPlan,
+  discountCoupons,
+  getVehicleMasterData,
   searchVehicle,
   getMessages,
   getAllBookingDuration,
   createOrder,
+  createVehicleMaster,
   getOrders,
   booking,
   getAllVehicles,
   getLocations,
-  createBookingDuration
+  createBookingDuration,
+  getVehicleTblData,
+  getStationData,
+  getLocationData,
+  getPlanData,
 } = require("../models/vehicles.model");
+
+exports.getStationData = async (req, res) => {
+  try {
+    const result = await getStationData(req.query);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+exports.getVehicleTblData = async (req, res) => {
+  try {
+    const result = await getVehicleTblData(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+exports.getPlanData = async (req, res) => {
+  try {
+    const result = await getPlanData(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+exports.getLocationData = async (req, res) => {
+  try {
+    const result = await getLocationData(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
 
 
 exports.createVehicle = async (req, res) => {
@@ -83,6 +146,22 @@ exports.getAllBookingDuration = async (req, res) => {
   }
 }
 
+exports.getVehicleMasterData = async (req, res) => {
+  try {
+    const result = await getVehicleMasterData(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
+
 
 
 exports.booking = async (req, res) => {
@@ -112,6 +191,21 @@ exports.createOrder = async (req, res) => {
     });
   }
 }
+
+exports.createVehicleMaster = async (req, res) => {
+  try {
+    const result = await createVehicleMaster(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
 
 exports.getOrders = async (req, res) => {
   try {
@@ -149,6 +243,67 @@ exports.createLocation = async (req, res) => {
     });
   }
 }
+
+exports.createPlan = async (req, res) => {
+  try {
+    const result = await createPlan(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+exports.discountCoupons = async (req, res) => {
+  try {
+    const result = await discountCoupons(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
+
+exports.createInvoice = async (req, res) => {
+  try {
+    const result = await createInvoice(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
+exports.createStation = async (req, res) => {
+  try {
+    const result = await createStation(req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
 
 
 

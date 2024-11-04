@@ -2,15 +2,11 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const locationSchema = new Schema({
-    myLocation: {
+    locationName: {
       type: String,
       required: true
     },
-    subLocation: {
-      type: Array,
-      required: true
-    },
-    url: {
+    locationImage: {
       type: String,
       required: true
     }

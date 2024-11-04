@@ -1,4 +1,4 @@
-const { getTokens,verify, getAllUsers, verification, getUserPeersData, earlyAccess, pushNotification, updateUser, saveUser, getUserProfile, createConfig, getConfig, getPreferences, updatePreferences, createPlan, searchUser, updateImage, getUserByContact } = require("../models/account.model");
+const { getTokens,verify, getAllUsers, getAllDataCount, sendOtp, getUserPeersData, earlyAccess, pushNotification, updateUser, saveUser, getUserProfile, createConfig, getConfig, getPreferences, updatePreferences, createPlan, searchUser, updateImage, getUserByContact } = require("../models/account.model");
 
 exports.updateUser = async (req, res) => {
   try {
@@ -18,6 +18,21 @@ exports.updateUser = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const result = await getAllUsers();
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      status: 400,
+    });
+  }
+}
+
+
+exports.getAllDataCount = async (req, res) => {
+  try {
+    const result = await getAllDataCount(req.body);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({
@@ -74,10 +89,10 @@ exports.getUserByContact = async (req, res) => {
   }
 }
 
-exports.verification = async (req, res) => {
+exports.sendOtp = async (req, res) => {
   try {
     //req.body['userId'] = req.user.id
-    const result = await verification(req.body);
+    const result = await sendOtp(req.body);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({

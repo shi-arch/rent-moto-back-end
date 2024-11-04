@@ -6,11 +6,15 @@ const auth = require("../../../middlewares/auth/index");
 // guest login 
 router.post("/guest", async (req, res) => {
   loginService.guestLogin(req, res);
-}); 
+});
 
 // Login User
 router.post("/login", async (req, res) => {
   loginService.loginUser(req, res);
+});
+
+router.post("/adminLogin", async (req, res) => {
+  loginService.adminLogin(req, res);
 });
 
 // Verify Otp

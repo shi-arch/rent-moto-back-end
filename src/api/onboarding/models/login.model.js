@@ -17,21 +17,21 @@ const { sendMessage } = require("../../../utils/Phone");
 const User = require("../../../db/schemas/onboarding/user.schema");
 
 
-async function loginUser({ contact, countryCode, email}) {
+async function loginUser({ contact, countryCode, email }) {
   // check user is exit or not in database
   const otp = Math.floor(1000 + Math.random() * 9000);
   let result = ""
-  if(email){
+  if (email) {
     result = await User.findOne({ email });
   } else {
     result = await User.findOne({ contact, countryCode });
-  }  
+  }
   if (!result) {
-    if(email){
+    if (email) {
       await sendEmail(email, "Viberzone login otp", "<b>Please use this otp to authenticate vibezone </b>" + otp);
     } else {
       await sendMessage(process.env.OTP_TEMPLATE, otp, contact, countryCode);
-    }    
+    }
     // create user
     const userData = {
       email: email || "",
@@ -47,7 +47,7 @@ async function loginUser({ contact, countryCode, email}) {
     const savedUser = await newUser.save();
     return savedUser;
   }
-  if(email){
+  if (email) {
     await sendEmail(email, "Viberzone login otp", "<b>Please use this otp to authenticate vibezone </b>" + otp);
   } else {
     await sendMessage(process.env.OTP_TEMPLATE, otp, contact, countryCode);
@@ -81,10 +81,49 @@ async function guestLogin({ ip }) {
   return savedUser;
 }
 
+
+async function adminLogin({ email, password }) {
+  const obj = { status: 200, message: "Admin logged in successfully", data: [], token: "" }
+  if(email && password){
+    const result = await User.findOne({ email, password }, { password: 0 });
+    if (!result) {
+      obj.status = 401
+      obj.message = "invalid credentials"
+      return obj
+    }
+    const token = JWT.sign({ id: result._id }, BCRYPT_TOKEN);
+    obj.data = result
+    obj.token = token
+  } else {
+    obj.status = 401
+    obj.message = "Invalid data or something is missing"
+  }
+  return obj
+}
+
+async function logOut({ email, password }) {
+  const obj = { status: 200, message: "data fetched successfully", data: [], token: "" }
+  if(email && password){
+    const result = await User.findOne({ email, password }, { password: 0 });
+    if (!result) {
+      obj.status = 401
+      obj.message = "invalid credentials"
+      return obj
+    }
+    const token = JWT.sign({ id: result._id }, BCRYPT_TOKEN);
+    obj.data = result
+    obj.token = token
+  } else {
+    obj.status = 401
+    obj.message = "Invalid data or something is missing"
+  }
+  return obj
+}
+
 async function verifyOtp({ otp, contact, email }) {
-  let userCred = {contact}
-  if(email){
-    userCred = {email}
+  let userCred = { contact }
+  if (email) {
+    userCred = { email }
   }
   const result = await User.findOne({ userCred, otp });
   if (!result) {
@@ -103,21 +142,23 @@ async function verifyOtp({ otp, contact, email }) {
 
   // provide token
   const token = JWT.sign({ id: result._id }, BCRYPT_TOKEN);
-  
+
 
   return {
     user: result,
     token,
-    status: !result.name ? false: true 
+    status: !result.name ? false : true
   }
 
 }
 
 
+
+
 async function resendOtp({ Contact, email }) {
-  let userCred = {Contact};
-  if(email){
-    userCred = {email}
+  let userCred = { Contact };
+  if (email) {
+    userCred = { email }
   }
   const result = await User.findOne({ userCred });
   if (!result) {
@@ -127,11 +168,11 @@ async function resendOtp({ Contact, email }) {
   // send otp to user
   const otp = Math.floor(1000 + Math.random() * 9000);
   // need to add country code
-  if(email){
+  if (email) {
     await sendEmail(email, "Viberzone login otp", "<b>Please use this otp to authenticate vibezone </b>" + otp);
   } else {
     await sendMessage(process.env.OTP_TEMPLATE, otp, Contact);
-  }  
+  }
   // update user table
   const userData = {
     otp,
@@ -142,13 +183,15 @@ async function resendOtp({ Contact, email }) {
   const updatedUser = await User.findByIdAndUpdate(result._id, userData, {
     new: true,
   });
-  return updatedUser; 
+  return updatedUser;
 }
 
 
 module.exports = {
   loginUser,
+  adminLogin,
   guestLogin,
+  logOut,
   verifyOtp,
   resendOtp
 };

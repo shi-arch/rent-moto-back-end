@@ -15,6 +15,14 @@ const Traffic = require("../../../db/schemas/onboarding/traffic.schema ");
 const { booking } = require("../services/vehicles.service");
 const Booking = require("../../../db/schemas/onboarding/booking.schema");
 const Vehicle = require("../../../db/schemas/onboarding/vehicle.schema");
+const { contactValidation, emailValidation } = require("../../../constant");
+const vehicleMaster = require("../../../db/schemas/onboarding/vehicle-master.schema");
+const station = require("../../../db/schemas/onboarding/station.schema");
+const coupon = require("../../../db/schemas/onboarding/coupons.schema");
+const invoiceTbl = require("../../../db/schemas/onboarding/invoice-tbl.schema");
+const plan = require("../../../db/schemas/onboarding/plan.schema");
+const order = require("../../../db/schemas/onboarding/order.schema");
+const location = require("../../../db/schemas/onboarding/location.schema");
 
 
 const transporter = nodemailer.createTransport({
@@ -31,7 +39,7 @@ async function updateUser({ _id, userType, firstName, contact, lastName, email }
   const o = { status: 200, message: "data fetched successfully", data: [] }
   try {
     const result = await User.findOne({ _id: ObjectId(_id) })
-    if(result){
+    if (result) {
       const obj = {
         userType: userType ? userType : "USER",
         firstName: firstName ? firstName : "",
@@ -42,14 +50,14 @@ async function updateUser({ _id, userType, firstName, contact, lastName, email }
       await User.updateOne(
         { _id: ObjectId(_id) },
         {
-          $set: obj 
+          $set: obj
         },
         { new: true }
       );
       o.message = "user updated successfully"
     } else {
       o.message = "Invalid details",
-      o.status = "401"
+        o.status = "401"
     }
     return "Updated Successfully";
   } catch (error) {
@@ -59,8 +67,14 @@ async function updateUser({ _id, userType, firstName, contact, lastName, email }
 
 async function getAllUsers() {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const response = await User.find({})
-  if (response && response.length) {    
+  const response = (await User.find({})).map(ele => {
+    let o = {...ele._doc}
+    o.isEmailVerified = ele.isEmailVerified.toString()
+    o.isContactVerified = ele.isContactVerified.toString()
+    o.kycApproved = ele.kycApproved.toString()
+    return o
+  });
+  if (response && response.length) {
     obj.data = response
   } else {
     obj.status = 401
@@ -69,35 +83,107 @@ async function getAllUsers() {
   return obj
 }
 
-
-
-async function saveUser(o) {
-  const obj = { status: "200", message: "data fetched successfully", data: [] }
+async function getAllDataCount() {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  obj.data = {
+    usersCount: await User.count({}),
+    bookingsCount: await Booking.count({}),    
+    vehiclesCount: await vehicleMaster.count({}),
+    locationCount: await location.count({}),
+    stationsCount: await station.count({}),
+    couponsCount: await coupon.count({}),
+    invoicesCount: await invoiceTbl.count({}),
+    plansCount: await plan.count({}),
+    ordersCount: await order.count({}),
+  }
+  return obj
+}
+async function saveUser({ userType, status, altContact, firstName, lastName, contact, email, password, deleteUser }) {
+  const response = { status: "200", message: "data fetched successfully", data: [] }
   try {
-    const findUser = await User.findOne({ contact: o.contact });
-    if (findUser) {
-      await User.updateOne(
-        { contact: o.contact },
-        {
-          $set: { ...o }
-        },
-        { new: true }
-      );
-      obj.status = 401
-      obj.message = "user updated successfully"
+    if (contact) {
+      if (deleteUser) {
+        await User.deleteOne({ contact })
+        response.message = "user deleted successfully"
+        response.status = 200
+        response.data = { contact }
+        return response
+      }
+      const isValid = contactValidation(contact)
+      const isValidEmail = emailValidation(email)
+      if (!isValidEmail) {
+        response.status = 401
+        response.message = "Invalid email address"
+        return response
+      }
+      if (!isValid) {
+        response.status = 401
+        response.message = "Invalid phone number"
+        return response
+      }
+      let checkUserType = "customer"
+      let checkAltContact = altContact || 0
+      let checkStatus = status || "active"
+      if (userType) {
+        let isUserType = ["manager", "customer", "admin"].includes(userType)
+        checkUserType = userType
+        if(checkUserType == "admin" && !password){
+          response.status = 401
+          response.message = "password is required"
+          return response          
+        }
+        if (!isUserType) {
+          response.status = 401
+          response.message = "Invalid user type"
+          return response
+        }
+      }
+      if (status) {
+        let statusCheck = ["active", "inactive"].includes(status)
+        checkStatus = status
+        if (!statusCheck) {
+          response.status = 401
+          response.message = "Invalid user status"
+          return response
+        }
+      }
+      const obj = {
+        userType: checkUserType, status: checkStatus, altContact: checkAltContact, firstName, lastName, contact, email, password
+      }
+      const findUser = await User.findOne({ contact })
+      if (findUser) {
+        await User.updateOne(
+          { contact },
+          {
+            $set: obj
+          },
+          { new: true }
+        );
+        response.message = "user updated successfully"
+        response.data = obj
+      } else {
+        if (firstName && lastName && contact && email) {
+          const SaveUser = new User(obj)
+          SaveUser.save()
+          response.message = "data saved successfully"
+          response.data = obj
+        } else {
+          response.status = 401
+          response.message = "Invalid user details"
+        }
+      }
     } else {
-      const SaveUser = new User(o)
-      SaveUser.save()
-      obj.message = "data saved successfully"
+      response.status = 401
+      response.message = "Invalid user details"
     }
   } catch (error) {
     throw new Error(error);
   }
-  return obj
+  return response
 }
 
 async function updateImage(req) {
-  const obj = { status: 200, message: "data fetched successfully", data: "" };
+  const obj = { status: 200, message: "image updated successfully", data: "" };
   console.log(req.file)
   const url = req.protocol + '://' + req.get('host')
   obj.data = url + '/public/' + req.file.filename
@@ -124,26 +210,26 @@ async function getUserProfile(userId) {
 
 async function getUserByContact(body) {
   const obj = { status: 200, message: "data fetched successfully", data: [] };
-  const {contact, userType} = body
-  const o = {contact}
+  const { contact, userType } = body
+  const o = { contact }
   o.userType = 'USER'
-  if(userType){
+  if (userType) {
     o.userType = userType
   }
   try {
     const result = await User.findOne({ ...o });
     if (result) {
-      const findBookings = await Booking.find({ contact });  
-      obj.data = result._doc  
-      if(findBookings && findBookings.length){
+      const findBookings = await Booking.find({ contact });
+      obj.data = result._doc
+      if (findBookings && findBookings.length) {
         let arr = []
-        for(let i = 0; i < findBookings.length; i++){
+        for (let i = 0; i < findBookings.length; i++) {
           const o = findBookings[i]
           const vehicleData = await Vehicle.findOne({ _id: ObjectId(o.vehicleId) });
-          arr.push({bookingData: o, vehicleData: vehicleData})
+          arr.push({ bookingData: o, vehicleData: vehicleData })
         }
-        obj.data = {...obj.data, bookings: arr}
-      }      
+        obj.data = { ...obj.data, bookings: arr }
+      }
     } else {
       obj.status = 401
       obj.message = "data not found"
@@ -154,27 +240,81 @@ async function getUserByContact(body) {
   }
 }
 
-async function verification(o) {
+async function sendOtp(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] };
   const { email, contact, invoice } = o
-  const random = Math.floor(100000 + Math.random() * 900000)
   try {
-    if (email) {
-      let receiver = {
-        from: "kashyapshivram512@gmail.com",
-        to: email,
-        subject: invoice ? "Rent moto invoice" : "Rent moto email verification",
-        text: invoice ? invoice
-        :  "Hi " + email + ", " + "Your verification otp is " + random 
-      };
-      const response = await transporter.sendMail(receiver)
-      if (response) {
-        obj.data = response
-        obj.message = "email sent successfully"
+    let flag = true
+    if (contact) {
+      const isValidContact = contactValidation(contact)
+      if (isValidContact) {
+        const findUser = await User.findOne({ contact })
+        if (findUser) {
+          let {_doc} = findUser
+          if(email && _doc.email !== email){
+            flag = false
+            obj.message = "email and contact are not matching"
+            return obj
+          }
+        } else {
+          flag = false
+          obj.message = "user does not exist"
+          return obj
+        }
       } else {
-        obj.status = 401
-        obj.message = "data not found"
+        flag = false
+        obj.message = "contact is invalid"
+        return obj
       }
+      if (email) {
+        const isValidEmail = emailValidation(email)
+        if (!isValidEmail) {
+          flag = false
+          obj.message = "invalid email"
+          return obj
+        }
+      }
+    } else {
+      obj.status = 401
+      obj.message = "invalid contact"
+      return obj
+    }
+    if (flag) {
+      if (email) {
+        const random = Math.floor(100000 + Math.random() * 900000)
+        let receiver = {
+          from: "kashyapshivram512@gmail.com",
+          to: email,
+          subject: invoice ? "Rent moto invoice" : "Rent moto email verification",
+          text: invoice ? invoice
+            : "Hi " + email + ", " + "Your verification otp is " + random
+        };
+        const response = await transporter.sendMail(receiver)
+        if (response) {
+          obj.data = response
+          const user = await User.findOne({ contact })
+          if (user) {
+            await User.updateOne(
+              { contact },
+              {
+                $set: { otp: random }
+              },
+              { new: true }
+            );
+          }
+          obj.message = "email sent successfully"
+        } else {
+          obj.status = 401
+          obj.message = "data not found"
+        }
+      }
+      if (contact) {
+        obj.message = "otp sent successfully"
+        obj.data = { ...obj.data, contact, otp: Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000 }
+      }
+    } else {
+      obj.status = 401
+      obj.message = "invalid data"
     }
     return obj;
   } catch (error) {
@@ -182,25 +322,40 @@ async function verification(o) {
   }
 }
 
-async function verify(o) {
-  const obj = { status: 200, message: "data fetched successfully", data: [] };
-  const { otp } = o
-  try {
-    if (otp) {
-      if (otp == "123456") {
-        obj.message = "otp verified successfully"
+async function verify({ type, otp, contact }) {
+  const obj = { status: 200, message: "data fetched successfully", data: [] };  
+  if(type && otp && contact){
+    if (type == "email") {
+      const findUser = await User.findOne({ contact })
+      if (findUser) {
+        const { _doc } = findUser
+        if (otp == _doc.otp) {
+          obj.message = "otp verified successfully"
+          await User.updateOne(
+            { contact },
+            {
+              $set: { otp: "" }
+            },
+            { new: true }
+          )
+        } else {
+          obj.status = 401
+          obj.message = "invalid otp"
+        }
       } else {
         obj.status = 401
-        obj.message = "invalid otp"
+        obj.message = "invalid contact"
       }
     } else {
-      obj.status = 401
-      obj.message = "invalid otp"
+      if(type == "contact" && otp == "123456"){
+        obj.message = "otp verified successfully"        
+      }
     }
-    return obj;
-  } catch (error) {
-    throw new Error(error);
-  }
+  } else {
+    obj.status = 401
+    obj.message = "invalid data"
+  }  
+  return obj;
 }
 
 
@@ -251,7 +406,8 @@ async function searchUser(data) {
 
 
 module.exports = {
-  verification,
+  sendOtp,
+  getAllDataCount,
   verify,
   getAllUsers,
   updateUser,
