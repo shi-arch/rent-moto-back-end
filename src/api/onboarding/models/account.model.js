@@ -148,7 +148,7 @@ async function saveUser({ userType, status, altContact, firstName, lastName, con
         }
       }
       const obj = {
-        userType: checkUserType, status: checkStatus, altContact: checkAltContact, firstName, lastName, contact, email, password
+        userType: checkUserType, status: checkStatus, altContact: checkAltContact, firstName, lastName, contact, email, password, otp: Math.floor(1000 + Math.random() * 9000)
       }
       const findUser = await User.findOne({ contact })
       if (findUser) {

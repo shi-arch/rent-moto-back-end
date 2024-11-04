@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   otp: {
-    type: String
+    type: String,
+    required: true
   },
   isEmailVerified: {
     type: Boolean,

@@ -2,63 +2,68 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const orderSchema = new Schema({
-    vehicleNumber: {
+    orderId: { //
+        type: String,
+        unique: true,
+        required: true
+    },
+    vehicleNumber: { //
         type: String,
         required: true
     },
-    vehicleImage: {
+    vehicleImage: { //
         type: String,
         required: true
     },
-    vehicleName: {
+    vehicleName: { //
         type: String,
         required: true
     },
-    endDate: {
+    endDate: { //
         type: String,
         required: true
     },
-    endTime: {
+    endTime: { //
         type: String,
         required: true
     },
-    startDate: {
+    startDate: { //
         type: String,
         required: true
     },
-    startTime: {
+    startTime: { //
         type: String,
         required: true
     },
-    location: {
+    location: { //
         type: String,
         required: true
     },
-    pickupLocation: {
+    pickupLocation: { //
         type: String,
         required: true
     },
-    paymentStatus: {
+    paymentStatus: { //
         type: String,
         required: true
     },
-    paymentMethod: {
+    paymentMethod: { //
         type: String,
         required: true
     },
-    userName: {
+    userName: { //
         type: String,
         required: true
     },
-    email: {
+    email: { //
         type: String,
         required: true
     },
-    contact: {
+    contact: { //
         type: String,
         required: true
     },
-    submittedDocument: {
+    submittedDocument: { //
         type: String,
         required: true
     }

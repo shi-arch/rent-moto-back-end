@@ -90,14 +90,6 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
           return response
         }
       }
-      if (vehicleNumber) {
-        const findVeh = await VehicleTable.findOne({ vehicleNumber })
-        if (findVeh) {
-          response.status = 401
-          response.message = "Vehicle number already exist"
-          return response
-        }
-      }
       if (locationId) {
         const findLocation = await Location.findOne({ locationId })
         if (!findLocation) {
@@ -114,6 +106,23 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
           return response
         }
       }
+      if(_id && _id.length == 24){
+        const find = await VehicleTable.findOne({ _id: ObjectId(_id) })
+        if (!find) {
+          response.status = 401
+          response.message = "Invalid vehicleId"
+          return response
+        }
+        if (vehicleNumber) {
+          const findVeh = await VehicleTable.find({ vehicleNumber })
+          if (findVeh && findVeh.length == 2) {
+            response.status = 401
+            response.message = "Vehicle number already exist"
+            return response
+          }
+        }
+      }      
+      
       const o = {
         vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
       }
@@ -287,9 +296,15 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
 async function createOrder(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   const { vehicleNumber, vehicleName, endDate, endTime, startDate, startTime, pickupLocation, location,
-    paymentStatus, paymentMethod, userName, email, contact, submittedDocument, _id, vehicleImage } = o
+    paymentStatus, paymentMethod, userName, email, contact, submittedDocument, _id, vehicleImage, orderId } = o
   if (vehicleNumber && vehicleName && endDate && endTime && startDate && startTime && pickupLocation && location &&
-    paymentStatus && paymentMethod && userName && email && contact && submittedDocument && vehicleImage) {
+    paymentStatus && paymentMethod && userName && email && contact && submittedDocument && vehicleImage && orderId) {
+    const find = await Order.findOne({ orderId })
+    if (find) {
+      obj.status = 401
+      obj.message = "order id already exist"
+      return obj
+    }
     if (_id) {
       const result = await Order.findOne({ _id: ObjectId(_id) });
       if (result) {
@@ -302,11 +317,12 @@ async function createOrder(o) {
         );
         obj.message = "data updated successfully"
       } else {
-        const result = new Order({ ...o });
-        await result.save();
-        obj.message = "data saved successfully"
+        obj.status = 401
+        obj.message = "Invalid _id"
+        return obj
       }
     } else {
+      delete o._id
       const result = new Order({ ...o });
       await result.save();
       obj.message = "data saved successfully"
@@ -318,38 +334,44 @@ async function createOrder(o) {
   return obj
 }
 
-async function createLocation({ locationName, locationImage, deleteRec }) {
+async function createLocation({ locationName, locationImage, deleteRec, _id }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
-  if (locationName) {
-    const o = {
-      locationName, locationImage
-    }
-    const find = await Location.findOne({ locationName })
-    if (find) {
-      await Location.updateOne(
-        { locationName },
-        {
-          $set: o
-        },
-        { new: true }
-      );
-      obj.message = "location updated successfully"
-      obj.data = o
+  if (_id && _id.length == 24) {
+    const find = await Location.findOne({ _id: ObjectId(_id) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "Invalid _id"
       return obj
-    } else {
-      if (locationName && locationImage) {
-        const SaveLocation = new Location(o)
-        SaveLocation.save()
-        obj.message = "data saved successfully"
-        obj.data = o
-      } else {
-        obj.status = 401
-        obj.message = "Invalid location details"
-      }
     }
+    if (deleteRec) {
+      await Location.deleteOne({ _id: ObjectId(_id) })
+      obj.message = "location deleted successfully"
+      obj.data = { _id }
+      return obj
+    }
+    await Location.updateOne(
+      { _id: ObjectId(_id) },
+      {
+        $set: { locationName, locationImage }
+      },
+      { new: true }
+    );
+    obj.message = "location updated successfully"
+    obj.data = { _id }
+    return obj
   } else {
-    obj.status = 401
-    obj.message = "Invalid data"
+    if(locationName && locationImage) {
+      const find = await Location.findOne({ locationName })
+      if(find) {
+        obj.status = 401
+        obj.message = "location already exist"
+        return obj
+      }
+      const SaveLocation = new Location({ locationName, locationImage })
+      SaveLocation.save()
+      obj.message = "data saved successfully"
+      obj.data = SaveLocation
+    }
   }
   return obj
 }
@@ -359,7 +381,7 @@ async function createPlan({ planName, planPrice, locationId, stationId, _id, del
   try {
     if (_id || (planName && planPrice && locationId && stationId)) {
       let o = { planName, planPrice, locationId, stationId }
-      if (locationId.length == 24) {
+      if (locationId.length !== 24) {
         obj.status = 401
         obj.message = "invalid location id"
         return obj
@@ -549,53 +571,58 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 
 
 
-async function createStation({ stationName, locationId, stationId }) {
+async function createStation({ stationName, locationId, stationId, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
-  if (stationId || (stationName && locationId)) {
-    let o = { stationName, locationId }
-    if (stationName) {
-      const find = await Station.findOne({ stationName })
+  const o = { stationId, stationName, locationId }
+  if (locationId && locationId.length == 24) {
+    const find = await Location.findOne({ _id: ObjectId(locationId) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid location id"
+      return obj
+    }
+  } else {
+    obj.status = 401
+    obj.message = "invalid location id"
+    return obj
+  }
+  if (_id) {
+    const find = await Station.findOne({ _id: ObjectId(_id) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "Invalid station id"
+      return obj
+    }
+    if (deleteRec) {
+      await Station.deleteOne({ _id: ObjectId(_id) })
+      obj.message = "station deleted successfully"
+      return obj
+    }
+    await Station.updateOne(
+      { stationId },
+      {
+        $set: o
+      },
+      { new: true }
+    );
+    obj.message = "station updated successfully"
+    obj.data = o
+  } else {
+    if (stationName && locationId && stationId) {
+      const find = await Station.findOne({ stationId })
       if (find) {
         obj.status = 401
         obj.message = "station already exists"
         return obj
       }
-    }
-    if (locationId) {
-      const find = await Location.findOne({ _id: ObjectId(locationId) })
-      if (!find) {
-        obj.status = 401
-        obj.message = "invalid location id"
-        return obj
-      }
-    }
-    if (stationId) {
-      const find = await Station.findOne({ stationId })
-      if (find) {
-        await Station.updateOne(
-          { stationId },
-          {
-            $set: o
-          },
-          { new: true }
-        );
-        obj.message = "station updated successfully"
-        obj.data = o
-        return obj
-      } else {
-        obj.status = 401
-        obj.message = "Invalid stationId"
-      }
-    } else {
-      o.stationId = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000
       const SaveStation = new Station(o)
       SaveStation.save()
       obj.message = "data saved successfully"
       obj.data = o
+    } else {
+      obj.status = 401
+      obj.message = "Invalid station details"
     }
-  } else {
-    obj.status = 401
-    obj.message = "Invalid data"
   }
   return obj
 }
