@@ -106,7 +106,7 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
           return response
         }
       }
-      if(_id && _id.length == 24){
+      if (_id && _id.length == 24) {
         const find = await VehicleTable.findOne({ _id: ObjectId(_id) })
         if (!find) {
           response.status = 401
@@ -121,8 +121,8 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
             return response
           }
         }
-      }      
-      
+      }
+
       const o = {
         vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
       }
@@ -360,9 +360,9 @@ async function createLocation({ locationName, locationImage, deleteRec, _id }) {
     obj.data = { _id }
     return obj
   } else {
-    if(locationName && locationImage) {
+    if (locationName && locationImage) {
       const find = await Location.findOne({ locationName })
-      if(find) {
+      if (find) {
         obj.status = 401
         obj.message = "location already exist"
         return obj
@@ -574,18 +574,6 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 async function createStation({ stationName, locationId, stationId, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
   const o = { stationId, stationName, locationId }
-  if (locationId && locationId.length == 24) {
-    const find = await Location.findOne({ _id: ObjectId(locationId) })
-    if (!find) {
-      obj.status = 401
-      obj.message = "invalid location id"
-      return obj
-    }
-  } else {
-    obj.status = 401
-    obj.message = "invalid location id"
-    return obj
-  }
   if (_id) {
     const find = await Station.findOne({ _id: ObjectId(_id) })
     if (!find) {
@@ -598,17 +586,35 @@ async function createStation({ stationName, locationId, stationId, _id, deleteRe
       obj.message = "station deleted successfully"
       return obj
     }
-    await Station.updateOne(
-      { stationId },
-      {
-        $set: o
-      },
-      { new: true }
-    );
-    obj.message = "station updated successfully"
-    obj.data = o
+    const findStationId = await Station.findOne({ stationId })
+      if (findStationId) {
+        await Station.updateOne(
+          { stationId },
+          {
+            $set: o
+          },
+          { new: true }
+        );
+        obj.message = "station updated successfully"
+        obj.data = o
+      } else {
+        obj.status = 401
+        obj.message = "cant update station id"
+      }    
   } else {
     if (stationName && locationId && stationId) {
+      if (locationId && locationId.length == 24) {
+        const find = await Location.findOne({ _id: ObjectId(locationId) })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid location id"
+          return obj
+        }
+      } else {
+        obj.status = 401
+        obj.message = "invalid location id"
+        return obj
+      }
       const find = await Station.findOne({ stationId })
       if (find) {
         obj.status = 401
@@ -827,6 +833,16 @@ const getVehicleTblData = async (query) => {
   }
   const response = await vehicleTable.find({ ...filter })
   if (response) {
+    for(let i = 0; i < response.length; i++) {
+      const { _doc } = response[i]
+      const o = _doc
+      const find1 = await vehicleMaster.findOne({ _id: o.vehicleId })
+      const find2 = await location.findOne({ _id: o.locationId })
+      const find3 = await station.findOne({ stationId: o.stationId })
+      o.vehicleName = find1._doc.vehicleName
+      o.locationName = find2._doc.locationName
+      o.stationName = find3._doc.stationName
+    }  
     obj.data = response
   } else {
     obj.status = 401
