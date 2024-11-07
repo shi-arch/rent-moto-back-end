@@ -68,7 +68,7 @@ router.get("/getVehicleMasterData", async (req, res) => {
   vehiclesService.getVehicleMasterData(req, res);
 })
 
-router.post("/booking", async (req, res) => {
+router.post("/createBooking", async (req, res) => {
   vehiclesService.booking(req, res);
 })
 

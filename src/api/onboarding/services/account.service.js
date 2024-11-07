@@ -17,7 +17,7 @@ exports.updateUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const result = await getAllUsers();
+    const result = await getAllUsers(req.query);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({

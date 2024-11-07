@@ -11,16 +11,19 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   isEmailVerified: {
-    type: Boolean,
-    default: false
+    type: String,
+    enum: ["yes", "no"],
+    default: "no"
   },
   isContactVerified: {
-    type: Boolean,
-    default: false
+    type: String,
+    enum: ["yes", "no"],
+    default: "no"
   },
   kycApproved: {
-    type: Boolean,
-    default: false
+    type: String,
+    enum: ["yes", "no"],
+    default: "no"
   },
   userDocuments: {
     type: Array,
@@ -40,6 +43,21 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  drivingLicence: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  idProof: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  addressProof: {
+    type: String,
+    required: true,
+    trim: true
+  },
   lastName: {
     type: String,
     required: true,
@@ -54,10 +72,6 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    trim: true
-  },
-  password: {
-    type: String,
     trim: true
   }
 }, { timestamps: true });

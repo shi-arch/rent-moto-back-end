@@ -9,8 +9,7 @@ const invoiceSchema = new Schema({
     },
     orderId: {
       type: String,
-      required: true,
-      unique: true      
+      required: true  
     },
     pdfDoc: {
       type: String,

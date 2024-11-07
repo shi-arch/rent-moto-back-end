@@ -20,6 +20,7 @@ const vehicleMaster = require("../../../db/schemas/onboarding/vehicle-master.sch
 const plan = require("../../../db/schemas/onboarding/plan.schema");
 const location = require("../../../db/schemas/onboarding/location.schema");
 const station = require("../../../db/schemas/onboarding/station.schema");
+const order = require("../../../db/schemas/onboarding/order.schema");
 
 const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookingId }) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
@@ -179,116 +180,125 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
   const { startTime, startDate } = BookingStartDateAndTime
   const { endTime, endDate } = BookingEndDateAndTime
   const { totalPrice, discountPrice, tax, roundPrice } = bookingPrice
-  if (_id || (
-    vehicleTableId && userId && BookingStartDateAndTime && BookingEndDateAndTime && bookingPrice && startTime && endTime && startDate &&
-    bookingStatus && paymentStatus && rideStatus && pickupLocation && invoice && paymentMethod && paySuccessId && payInitFrom && endDate &&
-    totalPrice && tax && roundPrice && discountPrice
-  )) {
-    const o = {
-      vehicleTableId, userId, BookingStartDateAndTime, BookingEndDateAndTime, extraAddon, bookingPrice,
-      discount, bookingStatus, paymentStatus, rideStatus, pickupLocation, invoice, paymentMethod, paySuccessId, payInitFrom
-    }
-
-    if (vehicleTableId) {
-      const find = await vehicleTable.findOne({ _id: ObjectId(vehicleTableId) })
-      if (!find) {
-        obj.status = 401
-        obj.message = "invalid vehicle table id"
-        return obj
-      }
-    }
-    if (userId) {
-      const find = await User.findOne({ _id: ObjectId(userId) })
-      if (!find) {
-        obj.status = 401
-        obj.message = "invalid user id"
-        return obj
-      }
-    }
-    if (bookingStatus) {
-      let check = ['pending', 'completed', 'canceled'].includes(bookingStatus)
-      if (!check) {
-        obj.status = 401
-        obj.message = "Invalid booking Status"
-        return obj
-      }
-    }
-    let check = ['fixed', 'percentage'].includes(discount)
-    if (!check) {
-      obj.status = 401
-      obj.message = "Invalid discount type"
-      return obj
-    }
-
-  } else {
-    obj.status = 401
-    obj.message = "Something is missing"
-    return obj
-  }
-  if (paymentStatus) {
-    let check = ['pending', 'completed', 'canceled'].includes(paymentStatus)
-    if (!check) {
-      obj.status = 401
-      obj.message = "Invalid paymentStatus"
-      return obj
-    }
-  }
-  if (rideStatus) {
-    let check = ['pending', 'completed', 'canceled'].includes(rideStatus)
-    if (!check) {
-      obj.status = 401
-      obj.message = "Invalid rideStatus"
-      return obj
-    }
-  }
-  if (paymentMethod) {
-    let check = ['online', 'cash'].includes(paymentMethod)
-    if (!check) {
-      obj.status = 401
-      obj.message = "Invalid payment method"
-      return obj
-    }
-  }
-  if (pickupLocation) {
-    const find = await Station.findOne({ stationId: pickupLocation })
-    if (!find) {
-      obj.status = 401
-      obj.message = "invalid pickup location"
-      return obj
-    }
-  }
-  if (invoice) {
-    const find = await InvoiceTbl.findOne({ _id: ObjectId(invoice) })
-    if (!find) {
-      obj.status = 401
-      obj.message = "invalid invoice id"
-      return obj
-    }
+  const o = {
+    vehicleTableId, userId, BookingStartDateAndTime, BookingEndDateAndTime, extraAddon, bookingPrice,
+    discount, bookingStatus, paymentStatus, rideStatus, pickupLocation, invoice, paymentMethod, paySuccessId, payInitFrom
   }
   if (_id) {
-    const result = await Booking.findOne({ _id: ObjectId(_id) });
-    if (result) {
-      if (deleteRec) {
-        await Booking.deleteOne({ _id: ObjectId(_id) })
-        obj.message = "booking deleted successfully"
-        obj.data = { _id }
-        return obj
-      }
-      await Booking.updateOne(
-        { _id: ObjectId(_id) },
-        {
-          $set: o
-        },
-        { new: true }
-      );
-      obj.message = "booking updated successfully"
-      obj.data = o
+    const find = await Booking.findOne({ _id: ObjectId(_id) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "Invalid booking id"
+      return obj
     }
+    if (deleteRec) {
+      await Booking.deleteOne({ _id: ObjectId(_id) })
+      obj.message = "booking deleted successfully"
+      obj.status = 200
+      obj.data = { _id }
+      return obj
+    }
+    await Booking.updateOne(
+      { _id: ObjectId(_id) },
+      {
+        $set: o
+      },
+      { new: true }
+    );
   } else {
-    const SavePlan = new Booking(o)
-    SavePlan.save()
-    obj.message = "new booking saved successfully"
-    obj.data = o
+    if (vehicleTableId && userId && BookingStartDateAndTime && BookingEndDateAndTime
+      && bookingPrice && startTime && endTime && startDate &&
+      bookingStatus && paymentStatus && rideStatus && pickupLocation && invoice
+      && paymentMethod && paySuccessId && payInitFrom && endDate &&
+      totalPrice && tax && roundPrice && discountPrice
+    ) {
+      if (vehicleTableId) {
+        const find = await vehicleTable.findOne({ _id: ObjectId(vehicleTableId) })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid vehicle table id"
+          return obj
+        }
+      }
+      if (userId) {
+        const find = await User.findOne({ _id: ObjectId(userId) })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid user id"
+          return obj
+        }
+      }
+      if (bookingPrice) {
+        if (bookingPrice.totalPrice < 0 || bookingPrice.discountPrice < 0 || bookingPrice.tax < 0 || bookingPrice.roundPrice < 0) {
+          obj.status = 401
+          obj.message = "invalid booking price"
+          return obj
+        }
+      }
+      if (bookingStatus) {
+        let check = ['pending', 'completed', 'canceled'].includes(bookingStatus)
+        if (!check) {
+          obj.status = 401
+          obj.message = "Invalid booking Status"
+          return obj
+        }
+      }
+      if (discount) {
+        let check = ['fixed', 'percentage'].includes(discount)
+        if (!check) {
+          obj.status = 401
+          obj.message = "Invalid discount type"
+          return obj
+        }
+      } if (paymentStatus) {
+        let check = ['pending', 'completed', 'canceled'].includes(paymentStatus)
+        if (!check) {
+          obj.status = 401
+          obj.message = "Invalid paymentStatus"
+          return obj
+        }
+      }
+      if (rideStatus) {
+        let check = ['pending', 'completed', 'canceled'].includes(rideStatus)
+        if (!check) {
+          obj.status = 401
+          obj.message = "Invalid rideStatus"
+          return obj
+        }
+      }
+      if (paymentMethod) {
+        let check = ['online', 'cash'].includes(paymentMethod)
+        if (!check) {
+          obj.status = 401
+          obj.message = "Invalid payment method"
+          return obj
+        }
+      }
+      if (pickupLocation) {
+        const find = await Station.findOne({ stationId: pickupLocation })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid pickup location"
+          return obj
+        }
+      }
+      if (invoice) {
+        const find = await InvoiceTbl.findOne({ _id: ObjectId(invoice) })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid invoice id"
+          return obj
+        }
+      }
+      const SavePlan = new Booking(o)
+      SavePlan.save()
+      obj.message = "new booking saved successfully"
+      obj.data = o
+    } else {
+      obj.status = 401
+      obj.message = "Something is missing"
+      return obj
+    }
   }
   return obj
 }
@@ -448,55 +458,57 @@ async function createPlan({ planName, planPrice, locationId, stationId, _id, del
   return obj
 }
 
-async function createInvoice({ invoiceNumber, orderId, pdfDoc, _id, deleteRec }) {
+async function createInvoice({ orderId, pdfDoc, _id, deleteRec }) {
   const obj = { status: 200, message: "invoice created successfully", data: [] }
-  if (_id || (invoiceNumber && orderId && pdfDoc)) {
-    let o = { invoiceNumber, orderId, pdfDoc }
-    if (invoiceNumber) {
-      const find = await InvoiceTbl.findOne({ invoiceNumber })
-      if (find) {
-        obj.status = 401
-        obj.message = "invoice already exists"
-        return obj
-      }
-    }
-    if (orderId) {
-      const find = await InvoiceTbl.findOne({ orderId })
-      if (find) {
-        obj.status = 401
-        obj.message = "orderId already exists"
-        return obj
-      }
-    }
+  const o = { orderId, pdfDoc }
+  try {
     if (_id) {
-      const result = await InvoiceTbl.findOne({ _id: ObjectId(_id) });
-      if (result) {
-        if (deleteRec) {
-          await InvoiceTbl.deleteOne({ _id: ObjectId(_id) })
-          obj.message = "invoice deleted successfully"
-          return obj
-        }
-        await InvoiceTbl.updateOne(
-          { _id: ObjectId(_id) },
-          {
-            $set: o
-          },
-          { new: true }
-        );
-        obj.message = "invoice updated successfully"
-        obj.data = o
+      const find = await InvoiceTbl.findOne({ _id: ObjectId(_id) })
+      if (!find) {
+        obj.status = 401
+        obj.message = "Invalid _id"
+        return obj
       }
-    } else {
-      const SavePlan = new InvoiceTbl(o)
-      SavePlan.save()
-      obj.message = "new invoice saved successfully"
+      if (deleteRec) {
+        await InvoiceTbl.deleteOne({ _id: ObjectId(_id) })
+        obj.message = "invoice deleted successfully"
+        return obj
+      }
+      delete o.invoiceNumber
+      await InvoiceTbl.updateOne(
+        { _id: ObjectId(_id) },
+        {
+          $set: o
+        },
+        { new: true }
+      );
+      obj.message = "invoice updated successfully"
       obj.data = o
+    } else {
+      if (orderId && pdfDoc) {
+        if (orderId) {
+          const find = await order.findOne({ orderId })
+          if (!find) {
+            obj.status = 401
+            obj.message = "invalid order id"
+            return obj
+          }
+        }
+        o.invoiceNumber = Math.floor(100000 + Math.random() * 900000)
+        const SavePlan = new InvoiceTbl(o)
+        SavePlan.save()
+        obj.message = "new invoice saved successfully"
+        obj.data = o
+      } else {
+        obj.status = 401
+        obj.message = "Invalid data"
+      }
     }
-  } else {
-    obj.status = 401
-    obj.message = "Invalid data"
+    return obj
+  } catch (err) {
+    console.log(err)
   }
-  return obj
+
 }
 
 async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAllowed, discountType, _id, deleteRec }) {
@@ -571,9 +583,9 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 
 
 
-async function createStation({ stationName, locationId, stationId, _id, deleteRec }) {
+async function createStation({ stationId, stationName, locationId, stationManagerFirstName, stationManagerLastName, language, country, state, city, address, pinCode, latitude, longitude, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
-  const o = { stationId, stationName, locationId }
+  const o = { stationId, stationName, locationId, stationManagerFirstName, stationManagerLastName, language, country, state, city, address, pinCode, latitude, longitude }
   if (_id) {
     const find = await Station.findOne({ _id: ObjectId(_id) })
     if (!find) {
@@ -587,22 +599,22 @@ async function createStation({ stationName, locationId, stationId, _id, deleteRe
       return obj
     }
     const findStationId = await Station.findOne({ stationId })
-      if (findStationId) {
-        await Station.updateOne(
-          { stationId },
-          {
-            $set: o
-          },
-          { new: true }
-        );
-        obj.message = "station updated successfully"
-        obj.data = o
-      } else {
-        obj.status = 401
-        obj.message = "cant update station id"
-      }    
+    if (findStationId) {
+      await Station.updateOne(
+        { stationId },
+        {
+          $set: o
+        },
+        { new: true }
+      );
+      obj.message = "station updated successfully"
+      obj.data = o
+    } else {
+      obj.status = 401
+      obj.message = "cant update station id"
+    }
   } else {
-    if (stationName && locationId && stationId) {
+    if (stationName && locationId && stationId && stationManagerFirstName && stationManagerLastName && language && country && state && city && address && pinCode && latitude && longitude) {
       if (locationId && locationId.length == 24) {
         const find = await Location.findOne({ _id: ObjectId(locationId) })
         if (!find) {
@@ -833,7 +845,7 @@ const getVehicleTblData = async (query) => {
   }
   const response = await vehicleTable.find({ ...filter })
   if (response) {
-    for(let i = 0; i < response.length; i++) {
+    for (let i = 0; i < response.length; i++) {
       const { _doc } = response[i]
       const o = _doc
       const find1 = await vehicleMaster.findOne({ _id: o.vehicleId })
@@ -842,7 +854,7 @@ const getVehicleTblData = async (query) => {
       o.vehicleName = find1._doc.vehicleName
       o.locationName = find2._doc.locationName
       o.stationName = find3._doc.stationName
-    }  
+    }
     obj.data = response
   } else {
     obj.status = 401
