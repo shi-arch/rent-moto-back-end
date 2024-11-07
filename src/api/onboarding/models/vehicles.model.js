@@ -854,6 +854,7 @@ const getVehicleTblData = async (query) => {
       o.vehicleName = find1._doc.vehicleName
       o.locationName = find2._doc.locationName
       o.stationName = find3._doc.stationName
+      o.vehicleImage = find1._doc.vehicleImage
     }
     obj.data = response
   } else {
