@@ -37,7 +37,7 @@ exports.getStationData = async (req, res) => {
 }
 exports.getVehicleTblData = async (req, res) => {
   try {
-    const result = await getVehicleTblData(req.body);
+    const result = await getVehicleTblData(req.query);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({

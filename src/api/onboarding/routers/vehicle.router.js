@@ -53,7 +53,7 @@ router.get("/getLocationData", async (req, res) => {
 router.get("/getPlanData", async (req, res) => {
   vehiclesService.getPlanData(req, res);
 })
-router.post("/getVehicleTblData", async (req, res) => {
+router.get("/getVehicleTblData", async (req, res) => {
   vehiclesService.getVehicleTblData(req, res);
 })
 router.get("/getStationData", async (req, res) => {
