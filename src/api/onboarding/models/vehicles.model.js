@@ -79,10 +79,10 @@ const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookin
 }
 
 
-async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, deleteRec }) {
+async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, deleteRec, vehicleBookingStatus, vehicleStatus }) {
   const response = { status: "200", message: "data fetched successfully", data: [] }
   try {
-    if (_id || (vehicleId && stationId && locationId && vehicleNumber && freeKms && extraKmsCharges && vehicleModel && vehicleColor && perDayCost && lastServiceDate && kmsRun && isBooked && condition)) {
+    if (_id || (vehicleId && vehicleBookingStatus && vehicleStatus && stationId && locationId && vehicleNumber && freeKms && extraKmsCharges && vehicleModel && vehicleColor && perDayCost && lastServiceDate && kmsRun && isBooked && condition)) {
       if (stationId) {
         const findStation = await Station.findOne({ stationId })
         if (!findStation) {
@@ -107,6 +107,22 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
           return response
         }
       }
+      if (vehicleBookingStatus) {
+        let statusCheck = ["available", "booked"].includes(vehicleBookingStatus)
+        if (!statusCheck) {
+          response.status = 401
+          response.message = "Invalid vehicleBookingStatus"
+          return response
+        }
+      }
+      if (vehicleStatus) {
+        let statusCheck = ["active", "inActive"].includes(vehicleStatus)
+        if (!statusCheck) {
+          response.status = 401
+          response.message = "Invalid vehicleStatus"
+          return response
+        }
+      }
       if (_id && _id.length == 24) {
         const find = await VehicleTable.findOne({ _id: ObjectId(_id) })
         if (!find) {
@@ -125,7 +141,7 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
       }
 
       const o = {
-        vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
+        vehicleBookingStatus, vehicleStatus, vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
       }
       if (_id) {
         const find = await VehicleTable.findOne({ _id: ObjectId(_id) })
@@ -839,24 +855,73 @@ const getVehicleMasterData = async (query) => {
 
 const getVehicleTblData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const { vehicleName, vehicleType, vehicleBrand, locationName, locationId, stationId, stationName } = query
   let filter = query
   if (filter._id) {
     filter._id = ObjectId(query._id)
   }
   const response = await vehicleTable.find({ ...filter })
   if (response) {
+    const arr = []
     for (let i = 0; i < response.length; i++) {
       const { _doc } = response[i]
-      const o = _doc
+      let pass = true
+      let o = _doc
       const find1 = await vehicleMaster.findOne({ _id: o.vehicleId })
       const find2 = await location.findOne({ _id: o.locationId })
       const find3 = await station.findOne({ stationId: o.stationId })
-      o.vehicleName = find1._doc.vehicleName
-      o.locationName = find2._doc.locationName
-      o.stationName = find3._doc.stationName
-      o.vehicleImage = find1._doc.vehicleImage
+      if (find1 && find2 && find3) {
+        const doc1 = find1?._doc
+        const doc2 = find2?._doc
+        const doc3 = find3?._doc
+        if (Object.keys(query).length) {
+          let obj1 = {}
+          vehicleName ? obj1.vehicleName = vehicleName : null
+          vehicleType ? obj1.vehicleType = vehicleType : null
+          vehicleBrand ? obj1.vehicleBrand = vehicleBrand : null
+          if (Object.keys(obj1).length) {
+            const findVehicleMaster = await vehicleMaster.findOne({ ...obj1 })
+            if (!findVehicleMaster) {
+              pass = false
+            }
+          }
+          let obj2 = {}
+          stationName ? obj2.stationName = stationName : null
+          stationId ? obj2.stationId = stationId : null
+          locationId ? obj2.locationId = locationId : null
+          if (Object.keys(obj2).length) {
+            const findVehicleMaster = await station.findOne({ ...obj2 })
+            if (!findVehicleMaster) {
+              pass = false
+            }
+          }
+          if (locationName) {
+            const findLocationMaster = await location.findOne({ locationName })
+            if (!findLocationMaster) {
+              pass = false
+            }
+          }
+          if (pass) {
+            o = {
+              ...o,
+              ...doc1,
+              ...doc2,
+              ...doc3
+            }
+            arr.push(o)
+          }
+        } else {
+          o = {
+            ...o,
+            ...doc1,
+            ...doc2,
+            ...doc3
+          }
+          arr.push(o)
+        }
+      }
     }
-    obj.data = response
+    obj.data = arr
   } else {
     obj.status = 401
     obj.message = "data not found"

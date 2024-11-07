@@ -7,6 +7,16 @@ const vehicleTableSchema = new Schema({
         ref: 'vehicleMaster',
         required: true
     },
+    vehicleBookingStatus: {
+        type: String,
+        enum: ["available", "booked"],
+        required: true
+    },
+    vehicleStatus: {
+        type: String,
+        enum: ["active", "inActive"],
+        required: true
+    },
     freeKms: {
         type: String,
         required: true
