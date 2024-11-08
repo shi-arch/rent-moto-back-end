@@ -875,7 +875,7 @@ const getVehicleTblData = async (query) => {
 
       const obj2 = { _id: ObjectId(o.locationId), locationName }
       vehicleName ? obj2.vehicleName = vehicleName : null
-      const find2 = await location.findOne({ _id: ObjectId(o.locationId) })
+      const find2 = await location.findOne(obj2)
 
       let obj3 = {}
       stationName ? obj3.stationName = stationName : null
@@ -887,8 +887,8 @@ const getVehicleTblData = async (query) => {
         o = {
           ...o,
           ...find1?._doc,
-          ...find2?.doc2,
-          ...find3?.doc3
+          ...find2?._doc,
+          ...find3?._doc
         }
         arr.push(o)
       } 
