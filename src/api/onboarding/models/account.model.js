@@ -67,7 +67,7 @@ async function updateUser({ _id, userType, firstName, contact, lastName, email }
 
 async function getAllUsers(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const response = await User.find({...o})
+  const response = await User.find({ ...o })
   if (response && response.length) {
     obj.data = response
   } else {
@@ -92,119 +92,148 @@ async function getAllDataCount() {
   }
   return obj
 }
-async function saveUser({ userType, status, altContact, firstName, lastName, contact, email, password, deleteUser, kycApproved, isEmailVerified, isContactVerified, drivingLicence, idProof, addressProof }) {
+
+async function saveUser({ _id, userType, status, altContact, firstName, lastName, otp, contact, email, password, deleteRec, kycApproved, isEmailVerified, isContactVerified, drivingLicence, idProof, addressProof }) {
   const response = { status: "200", message: "data fetched successfully", data: [] }
   try {
     if (contact) {
-      if (deleteUser) {
-        await User.deleteOne({ contact })
-        response.message = "user deleted successfully"
-        response.status = 200
-        response.data = { contact }
-        return response
-      }
       const isValid = contactValidation(contact)
       if (!isValid) {
         response.status = 401
         response.message = "Invalid phone number"
         return response
-      }
-      if (email) {
-        const isValidEmail = emailValidation(email)
-        if (!isValidEmail) {
-          response.status = 401
-          response.message = "Invalid email address"
-          return response
-        }
-      }      
-      let checkUserType = "customer"
-      let checkAltContact = altContact || ""
-      let checkStatus = status || "active"
-      if (userType) {
-        let isUserType = ["manager", "customer", "admin"].includes(userType)
-        checkUserType = userType
-        if (checkUserType == "admin" && !password) {
-          response.status = 401
-          response.message = "password is required"
-          return response
-        }
-        if (!isUserType) {
-          response.status = 401
-          response.message = "Invalid user type"
-          return response
-        }
-      }
-      if (status) {
-        let statusCheck = ["active", "inactive"].includes(status)
-        checkStatus = status
-        if (!statusCheck) {
-          response.status = 401
-          response.message = "Invalid user status"
-          return response
-        }
-      }
-      let checkKycApproved = "no"
-      if (kycApproved) {
-        let check = ["yes", "no"].includes(kycApproved)
-        if (check) {
-          checkKycApproved = kycApproved
-        } else {
-          response.status = 401
-          response.message = "Invalid kyc Approved"
-          return response
-        }
-      }
-      let checkIsEmailVerified = "no"
-      if (isEmailVerified) {
-        let check = ["yes", "no"].includes(isEmailVerified)
-        if (check) {
-          checkIsEmailVerified = isEmailVerified
-        } else {
-          response.status = 401
-          response.message = "Invalid isEmailVerified"
-          return response
-        }
-      }
-      let checkIsContactVerified = "no"
-      if (isContactVerified) {
-        let check = ["yes", "no"].includes(isContactVerified)
-        if (check) {
-          checkIsContactVerified = isContactVerified
-        } else {
-          response.status = 401
-          response.message = "Invalid isContactVerified"
-          return response
-        }
-      }
-      const obj = {
-        addressProof, drivingLicence, idProof, isContactVerified: checkIsContactVerified, isEmailVerified: checkIsEmailVerified, kycApproved: checkKycApproved, userType: checkUserType, status: checkStatus, altContact: checkAltContact, firstName, lastName, contact, email, password, otp: Math.floor(1000 + Math.random() * 9000)
-      }
-      const findUser = await User.findOne({ contact })
-      if (findUser) {
-        await User.updateOne(
-          { contact },
-          {
-            $set: obj
-          },
-          { new: true }
-        );
-        response.message = "user updated successfully"
-        response.data = obj
       } else {
-        if (firstName && lastName && contact && email && addressProof && idProof && drivingLicence) {
-          const SaveUser = new User(obj)
-          SaveUser.save()
-          response.message = "data saved successfully"
-          response.data = obj
-        } else {
+        const find = await User.findOne({ contact })
+        if (find) {
           response.status = 401
-          response.message = "some details are missing"
+          response.message = "this contact number already exists"
+          return response
         }
+      }
+    }
+    if (altContact) {
+      const isValid = contactValidation(altContact)
+      if (!isValid) {
+        response.status = 401
+        response.message = "Invalid altContact number"
+        return response
+      }
+    }
+    let checkUserType = "customer"
+    if (userType) {
+      let isUserType = ["manager", "customer", "admin"].includes(userType)
+      if (!isUserType) {
+        response.status = 401
+        response.message = "Invalid user type"
+        return response
+      } else {
+        if ((userType == "admin" || userType == "manager") && !password) {
+          response.status = 401
+          response.message = "password is required here if you are admin or manager"
+          return response
+        } else {
+          checkUserType = userType
+        }
+      }
+
+    }
+    let checkStatus = "active"
+    if (status) {
+      let statusCheck = ["active", "inactive"].includes(status)
+      if (!statusCheck) {
+        response.status = 401
+        response.message = "Invalid user status"
+        return response
+      } else {
+        checkStatus = status
+      }
+    }
+    let checkKycApproved = "no"
+    if (kycApproved) {
+      let check = ["yes", "no"].includes(kycApproved)
+      if (check) {
+        checkKycApproved = kycApproved
+      } else {
+        response.status = 401
+        response.message = "Invalid kyc Approved"
+        return response
+      }
+    }
+    let checkIsEmailVerified = "no"
+    if (isEmailVerified) {
+      let check = ["yes", "no"].includes(isEmailVerified)
+      if (check) {
+        checkIsEmailVerified = isEmailVerified
+      } else {
+        response.status = 401
+        response.message = "Invalid isEmailVerified"
+        return response
+      }
+    }
+    let checkIsContactVerified = "no"
+    if (isContactVerified) {
+      let check = ["yes", "no"].includes(isContactVerified)
+      if (check) {
+        checkIsContactVerified = isContactVerified
+      } else {
+        response.status = 401
+        response.message = "Invalid isContactVerified"
+        return response
+      }
+    }
+    if (email) {
+      const isValidEmail = emailValidation(email)
+      if (!isValidEmail) {
+        response.status = 401
+        response.message = "Invalid email address"
+        return response
+      }
+    }
+    const obj = {
+      addressProof, drivingLicence, idProof, isContactVerified: checkIsContactVerified, isEmailVerified: checkIsEmailVerified, otp, kycApproved: checkKycApproved, userType: checkUserType, status: checkStatus, altContact, firstName, lastName, contact, email, password, otp: Math.floor(1000 + Math.random() * 9000)
+    }
+    if (_id) {
+      if (_id && _id.length == 24) {
+        const find = await User.findOne({ _id: ObjectId(_id) })
+        if (!find) {
+          response.status = 401
+          response.message = "Invalid user id"
+          return response
+        } else {
+          if (deleteRec) {
+            await User.deleteOne({ _id: ObjectId(_id) })
+            response.message = "user deleted successfully"
+            response.status = 200
+            response.data = { _id }
+            return response
+          }
+          delete obj._id
+          await User.updateOne(
+            { _id: ObjectId(_id) },
+            {
+              $set: obj
+            },
+            { new: true }
+          );
+          response.message = "user updated successfully"
+          response.data = obj
+        }
+      } else {
+        response.status = 401
+        response.message = "Invalid user id"
+        return response
       }
     } else {
-      response.status = 401
-      response.message = "Invalid user details"
-    }
+      if (firstName && lastName && contact && email && addressProof && idProof && drivingLicence) {
+        const SaveUser = new User(obj)
+        SaveUser.save()
+        response.message = "data saved successfully"
+        response.data = obj
+      } else {
+        response.status = 401
+        response.message = "some details are missing"
+      }
+    }    
   } catch (error) {
     throw new Error(error);
   }

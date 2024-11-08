@@ -11,12 +11,9 @@ const stationSchema = new Schema({
       required: true,
       unique: true
     },
-    stationManagerFirstName: {
-      type: String,
-      required: true
-    },
-    stationManagerLastName: {
-      type: String,
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
       required: true
     },
     country: {
@@ -31,26 +28,19 @@ const stationSchema = new Schema({
       type: String,
       required: true
     },
-    language: {
-      type: String,
-      required: true
-    },
     pinCode: {
       type: String,
       required: true
     },
     address: {
       type: String,
-      required: true,
-      unique: true
+      required: true
     },
     latitude: {
-      type: String,
-      required: true
+      type: String
     },
     longitude: {
-      type: String,
-      required: true
+      type: String
     }
   }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
   

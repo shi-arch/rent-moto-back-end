@@ -599,9 +599,9 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 
 
 
-async function createStation({ stationId, stationName, locationId, stationManagerFirstName, stationManagerLastName, language, country, state, city, address, pinCode, latitude, longitude, _id, deleteRec }) {
+async function createStation({ stationId, stationName, locationId, state, city, userId, address, pinCode, latitude, longitude, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
-  const o = { stationId, stationName, locationId, stationManagerFirstName, stationManagerLastName, language, country, state, city, address, pinCode, latitude, longitude }
+  const o = { country: "India", stationId, stationName, locationId, state, city, address, pinCode, latitude, longitude, userId }
   if (_id) {
     const find = await Station.findOne({ _id: ObjectId(_id) })
     if (!find) {
@@ -630,7 +630,26 @@ async function createStation({ stationId, stationName, locationId, stationManage
       obj.message = "cant update station id"
     }
   } else {
-    if (stationName && locationId && stationId && stationManagerFirstName && stationManagerLastName && language && country && state && city && address && pinCode && latitude && longitude) {
+    if (stationName && locationId && stationId && state && city && address && pinCode && userId) {
+      if (userId && userId.length == 24) {
+        const find = await User.findOne({ _id: ObjectId(userId) })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid user id"
+          return obj
+        } else {
+          let userType = find._doc.userType
+          if(userType !== "manager"){
+            obj.status = 401
+            obj.message = "user is not manager"
+            return obj
+          }
+        }
+      } else {
+        obj.status = 401
+        obj.message = "invalid user id"
+        return obj
+      }
       if (locationId && locationId.length == 24) {
         const find = await Location.findOne({ _id: ObjectId(locationId) })
         if (!find) {
@@ -643,10 +662,16 @@ async function createStation({ stationId, stationName, locationId, stationManage
         obj.message = "invalid location id"
         return obj
       }
-      const find = await Station.findOne({ stationId })
-      if (find) {
+      if (stationId && stationId.length == 6 && !isNaN(stationId)) {
+        const find = await Station.findOne({ stationId })
+        if (find) {
+          obj.status = 401
+          obj.message = "station already exists"
+          return obj
+        }
+      } else {
         obj.status = 401
-        obj.message = "station already exists"
+        obj.message = "invalid station id"
         return obj
       }
       const SaveStation = new Station(o)
@@ -655,7 +680,7 @@ async function createStation({ stationId, stationName, locationId, stationManage
       obj.data = o
     } else {
       obj.status = 401
-      obj.message = "Invalid station details"
+      obj.message = "Missing Station details"
     }
   }
   return obj
@@ -860,7 +885,7 @@ const getVehicleTblData = async (query) => {
   if (filter._id) {
     filter._id = ObjectId(query._id)
   }
-  const response = await vehicleTable.find({ ...filter })
+  const response = await vehicleTable.find(filter)
   if (response) {
     const arr = []
     for (let i = 0; i < response.length; i++) {
@@ -873,8 +898,8 @@ const getVehicleTblData = async (query) => {
       vehicleBrand ? obj1.vehicleBrand = vehicleBrand : null
       const find1 = await vehicleMaster.findOne({ ...obj1 })
 
-      const obj2 = { _id: ObjectId(o.locationId), locationName }
-      vehicleName ? obj2.vehicleName = vehicleName : null
+      const obj2 = { _id: ObjectId(o.locationId) }
+      locationName ? obj2.locationName = locationName : null
       const find2 = await location.findOne(obj2)
 
       let obj3 = {}
@@ -891,7 +916,7 @@ const getVehicleTblData = async (query) => {
           ...find3?._doc
         }
         arr.push(o)
-      } 
+      }
     }
     obj.data = arr
   } else {

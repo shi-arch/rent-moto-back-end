@@ -7,8 +7,10 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   otp: {
-    type: String,
-    required: true
+    type: String
+  },
+  password: {
+    type: String
   },
   isEmailVerified: {
     type: String,
