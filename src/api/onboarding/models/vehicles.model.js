@@ -865,61 +865,33 @@ const getVehicleTblData = async (query) => {
     const arr = []
     for (let i = 0; i < response.length; i++) {
       const { _doc } = response[i]
-      let pass = true
       let o = _doc
-      const find1 = await vehicleMaster.findOne({ _id: o.vehicleId })
-      const find2 = await location.findOne({ _id: o.locationId })
-      const find3 = await station.findOne({ stationId: o.stationId })
+
+      let obj1 = { _id: ObjectId(o.vehicleId) }
+      vehicleName ? obj1.vehicleName = vehicleName : null
+      vehicleType ? obj1.vehicleType = vehicleType : null
+      vehicleBrand ? obj1.vehicleBrand = vehicleBrand : null
+      const find1 = await vehicleMaster.findOne({ ...obj1 })
+
+      const obj2 = { _id: ObjectId(o.locationId), locationName }
+      vehicleName ? obj2.vehicleName = vehicleName : null
+      const find2 = await location.findOne({ _id: ObjectId(o.locationId) })
+
+      let obj3 = {}
+      stationName ? obj3.stationName = stationName : null
+      stationId ? obj3.stationId = stationId : null
+      locationId ? obj3.locationId = locationId : null
+      const find3 = await station.findOne({ ...obj3 })
+
       if (find1 && find2 && find3) {
-        const doc1 = find1?._doc
-        const doc2 = find2?._doc
-        const doc3 = find3?._doc
-        if (Object.keys(query).length) {
-          let obj1 = {}
-          vehicleName ? obj1.vehicleName = vehicleName : null
-          vehicleType ? obj1.vehicleType = vehicleType : null
-          vehicleBrand ? obj1.vehicleBrand = vehicleBrand : null
-          if (Object.keys(obj1).length) {
-            const findVehicleMaster = await vehicleMaster.findOne({ ...obj1 })
-            if (!findVehicleMaster) {
-              pass = false
-            }
-          }
-          let obj2 = {}
-          stationName ? obj2.stationName = stationName : null
-          stationId ? obj2.stationId = stationId : null
-          locationId ? obj2.locationId = locationId : null
-          if (Object.keys(obj2).length) {
-            const findVehicleMaster = await station.findOne({ ...obj2 })
-            if (!findVehicleMaster) {
-              pass = false
-            }
-          }
-          if (locationName) {
-            const findLocationMaster = await location.findOne({ locationName })
-            if (!findLocationMaster) {
-              pass = false
-            }
-          }
-          if (pass) {
-            o = {
-              ...o,
-              ...doc1,
-              ...doc2,
-              ...doc3
-            }
-            arr.push(o)
-          }
-        } else {
-          o = {
-            ...o,
-            ...doc1,
-            ...doc2,
-            ...doc3
-          }
-          arr.push(o)
+        o = {
+          ...o,
+          ...find1?._doc,
+          ...find2?.doc2,
+          ...find3?.doc3
         }
-      }
+        arr.push(o)
+      } 
     }
     obj.data = arr
   } else {
