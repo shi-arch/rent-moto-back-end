@@ -224,7 +224,7 @@ async function saveUser({ _id, userType, status, altContact, firstName, lastName
         return response
       }
     } else {
-      if (firstName && lastName && contact && email && addressProof && idProof && drivingLicence) {
+      if (firstName && lastName && contact && email) {
         const SaveUser = new User(obj)
         SaveUser.save()
         response.message = "data saved successfully"

@@ -47,17 +47,17 @@ const userSchema = new mongoose.Schema({
   },
   drivingLicence: {
     type: String,
-    required: true,
+   // required: true,
     trim: true
   },
   idProof: {
     type: String,
-    required: true,
+    //required: true,
     trim: true
   },
   addressProof: {
     type: String,
-    required: true,
+   // required: true,
     trim: true
   },
   lastName: {
