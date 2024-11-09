@@ -21,6 +21,7 @@ const plan = require("../../../db/schemas/onboarding/plan.schema");
 const location = require("../../../db/schemas/onboarding/location.schema");
 const station = require("../../../db/schemas/onboarding/station.schema");
 const order = require("../../../db/schemas/onboarding/order.schema");
+const { emailValidation, contactValidation } = require("../../../constant");
 
 const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookingId }) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
@@ -79,23 +80,15 @@ const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookin
 }
 
 
-async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, deleteRec, vehicleBookingStatus, vehicleStatus }) {
+async function createVehicle({ _id, vehicleId, stationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, deleteRec, vehicleBookingStatus, vehicleStatus }) {
   const response = { status: "200", message: "data fetched successfully", data: [] }
   try {
-    if (_id || (vehicleId && vehicleBookingStatus && vehicleStatus && stationId && locationId && vehicleNumber && freeKms && extraKmsCharges && vehicleModel && vehicleColor && perDayCost && lastServiceDate && kmsRun && isBooked && condition)) {
+    if (_id || (vehicleId && vehicleBookingStatus && vehicleStatus && stationId && vehicleNumber && freeKms && extraKmsCharges && vehicleModel && vehicleColor && perDayCost && lastServiceDate && kmsRun && isBooked && condition)) {
       if (stationId) {
         const findStation = await Station.findOne({ stationId })
         if (!findStation) {
           response.status = 401
           response.message = "Invalid stationId"
-          return response
-        }
-      }
-      if (locationId) {
-        const findLocation = await Location.findOne({ locationId })
-        if (!findLocation) {
-          response.status = 401
-          response.message = "Invalid locationId"
           return response
         }
       }
@@ -115,11 +108,31 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
           return response
         }
       }
+      if(vehicleColor){
+        let statusCheck = ["white", "black", "red", "blue", "green", "yellow"].includes(vehicleColor)
+        if (!statusCheck) {
+          response.status = 401
+          response.message = "Invalid vehicle color"
+          return response
+        }
+      }
       if (vehicleStatus) {
         let statusCheck = ["active", "inActive"].includes(vehicleStatus)
         if (!statusCheck) {
           response.status = 401
           response.message = "Invalid vehicleStatus"
+          return response
+        }
+      }
+      if (vehicleNumber && vehicleNumber.length !== 10) {
+        response.status = 401
+        response.message = "Invalid vehicle number"
+        return response
+      } else {
+        const findVeh = await VehicleTable.find({ vehicleNumber })
+        if (findVeh && findVeh.length == 2) {
+          response.status = 401
+          response.message = "Vehicle number already exist"
           return response
         }
       }
@@ -130,18 +143,9 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
           response.message = "Invalid vehicleId"
           return response
         }
-        if (vehicleNumber) {
-          const findVeh = await VehicleTable.find({ vehicleNumber })
-          if (findVeh && findVeh.length == 2) {
-            response.status = 401
-            response.message = "Vehicle number already exist"
-            return response
-          }
-        }
       }
-
       const o = {
-        vehicleBookingStatus, vehicleStatus, vehicleId, stationId, locationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
+        vehicleBookingStatus, vehicleStatus, vehicleId, stationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
       }
       if (_id) {
         const find = await VehicleTable.findOne({ _id: ObjectId(_id) })
@@ -167,15 +171,21 @@ async function createVehicle({ _id, vehicleId, stationId, locationId, vehicleNum
         response.message = "Vehicle Table updated successfully"
         response.data = o
       } else {
-        const find = await VehicleTable.findOne({ vehicleNumber })
-        if (!find) {
-          const SaveVehicleTable = new VehicleTable(o)
-          SaveVehicleTable.save()
-          response.message = "data saved successfully"
-          response.data = o
+        if (vehicleId && vehicleBookingStatus && vehicleStatus && freeKms && extraKmsCharges && stationId && vehicleNumber && vehicleModel && vehicleColor && perDayCost && lastServiceDate && kmsRun && isBooked && condition) {
+          const find = await VehicleTable.findOne({ vehicleNumber })
+          if (!find) {
+            const SaveVehicleTable = new VehicleTable(o)
+            SaveVehicleTable.save()
+            response.message = "data saved successfully"
+            response.data = o
+          } else {
+            response.status = 401
+            response.message = "Vehicle number already exists"
+          }
         } else {
           response.status = 401
-          response.message = "Vehicle number already exists"
+          response.message = "Something is missing"
+          return response
         }
       }
     } else {
@@ -322,41 +332,155 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
 async function createOrder(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   const { vehicleNumber, vehicleName, endDate, endTime, startDate, startTime, pickupLocation, location,
-    paymentStatus, paymentMethod, userName, email, contact, submittedDocument, _id, vehicleImage, orderId } = o
-  if (vehicleNumber && vehicleName && endDate && endTime && startDate && startTime && pickupLocation && location &&
-    paymentStatus && paymentMethod && userName && email && contact && submittedDocument && vehicleImage && orderId) {
-    const find = await Order.findOne({ orderId })
-    if (find) {
+    paymentStatus, paymentMethod, userId, email, contact, submittedDocument, _id, vehicleImage, orderId } = o
+  if (vehicleNumber) {
+    const find = await vehicleTable.findOne({ vehicleNumber })
+    if (!find) {
       obj.status = 401
-      obj.message = "order id already exist"
+      obj.message = "invalid vehicle number"
       return obj
     }
-    if (_id) {
-      const result = await Order.findOne({ _id: ObjectId(_id) });
-      if (result) {
-        await Order.updateOne(
-          { _id: ObjectId(_id) },
-          {
-            $set: { ...o }
-          },
-          { new: true }
-        );
-        obj.message = "data updated successfully"
-      } else {
+  }
+  if (vehicleName) {
+    const find = await VehicleMaster.findOne({ vehicleName })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid vehicle name"
+      return obj
+    }
+  }
+  if (!startDate || !endDate) {
+    obj.status = 401
+    obj.message = "invalid date"
+    return obj
+  }
+  if (startDate && !Date?.parse(startDate) && endDate && !Date?.parse(endDate)) {
+    obj.status = 401
+    obj.message = "invalid date"
+    return obj
+  }
+  if (pickupLocation) {
+    const find = await Station.findOne({ stationId: pickupLocation })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid pickup location"
+      return obj
+    }
+  }
+  if (location) {
+    const find = await Location.findOne({ locationName: location })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid location"
+      return obj
+    }
+  }
+  if (paymentStatus) {
+    let check = ['pending', 'completed', 'canceled'].includes(paymentStatus)
+    if (!check) {
+      obj.status = 401
+      obj.message = "Invalid paymentStatus"
+      return obj
+    }
+  }
+  if (paymentMethod) {
+    let check = ['cash', 'card', 'upi', 'wallet'].includes(paymentMethod)
+    if (!check) {
+      obj.status = 401
+      obj.message = "Invalid paymentStatus"
+      return obj
+    }
+  }
+  if (userId) {
+    if (userId.length == 24) {
+      const find = await User.findOne({ _id: ObjectId(userId) })
+      if (!find) {
         obj.status = 401
-        obj.message = "Invalid _id"
+        obj.message = "invalid user id"
         return obj
       }
     } else {
+      obj.status = 401
+      obj.message = "invalid user id"
+      return obj
+    }
+  }
+  if (email) {
+    const validateEmail = emailValidation(email)
+    if (!validateEmail) {
+      obj.status = 401
+      obj.message = "invalid email"
+      return obj
+    }
+    const find = await User.findOne({ email })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid email"
+      return obj
+    }
+  }
+  if (contact) {
+    const validateContact = contactValidation(contact)
+    if (!validateContact) {
+      obj.status = 401
+      obj.message = "invalid contact"
+      return obj
+    }
+    const find = await User.findOne({ contact })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid contact"
+      return obj
+    }
+  }
+  if (orderId.length !== 4 || isNaN(orderId)) {
+    obj.status = 401
+    obj.message = "invalid order id"
+    return obj
+  }
+  if (_id && _id.length == 24) {
+    const find = await Order.findOne({ _id: ObjectId(_id) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "Invalid _id"
+      return obj
+    } else {
+      if (deleteRec) {
+        await Order.deleteOne({ _id: ObjectId(_id) })
+        obj.message = "order deleted successfully"
+        obj.status = 200
+        obj.data = { _id }
+        return obj
+      }
+      await Order.updateOne(
+        { _id: ObjectId(_id) },
+        {
+          $set: o
+        },
+        { new: true }
+      );
+      obj.message = "order updated successfully"
+      obj.data = o
+    }
+  } else {
+    if (vehicleNumber && vehicleName && endDate && endTime && startDate && startTime && pickupLocation && location &&
+      paymentStatus && paymentMethod && userId && email && contact && submittedDocument && vehicleImage && orderId) {
+      const find = await Order.findOne({ orderId })
+      if (find) {
+        obj.status = 401
+        obj.message = "order id already exist"
+        return obj
+      }
       delete o._id
       const result = new Order({ ...o });
       await result.save();
       obj.message = "data saved successfully"
+    } else {
+      obj.status = 401
+      obj.message = "Invalid data or something is missing"
     }
-  } else {
-    obj.status = 401
-    obj.message = "Invalid data or something is missing"
   }
+
   return obj
 }
 
@@ -402,17 +526,17 @@ async function createLocation({ locationName, locationImage, deleteRec, _id }) {
   return obj
 }
 
-async function createPlan({ planName, planPrice, locationId, stationId, _id, deleteRec }) {
+async function createPlan({ planName, planPrice, stationId, _id, deleteRec, planDuration }) {
   const obj = { status: 200, message: "plan created successfully", data: [] }
   try {
-    if (_id || (planName && planPrice && locationId && stationId)) {
-      let o = { planName, planPrice, locationId, stationId }
-      if (locationId.length !== 24) {
+    if (_id || (planName && planPrice && stationId && planDuration)) {
+      let o = { planName, planPrice, stationId, planDuration }
+      if(isNaN(planDuration)){
         obj.status = 401
-        obj.message = "invalid location id"
+        obj.message = "invalid plan duration"
         return obj
       }
-      if (planName && !_id) {
+      if (planName) {
         const find = await Plan.findOne({ planName })
         if (find) {
           obj.status = 401
@@ -428,13 +552,10 @@ async function createPlan({ planName, planPrice, locationId, stationId, _id, del
           return obj
         }
       }
-      if (locationId) {
-        const find = await Location.findOne({ _id: ObjectId(locationId) })
-        if (!find) {
-          obj.status = 401
-          obj.message = "invalid location id"
-          return obj
-        }
+      if(_id && _id.length !== 24){
+        obj.status = 401
+        obj.message = "invalid _id"
+        return obj
       }
       if (_id) {
         const result = await Plan.findOne({ _id: ObjectId(_id) });
@@ -602,7 +723,62 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 async function createStation({ stationId, stationName, locationId, state, city, userId, address, pinCode, latitude, longitude, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
   const o = { country: "India", stationId, stationName, locationId, state, city, address, pinCode, latitude, longitude, userId }
+  if (userId && userId.length == 24) {
+    const find = await User.findOne({ _id: ObjectId(userId) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid user id"
+      return obj
+    } else {
+      let userType = find._doc.userType
+      if (userType !== "manager") {
+        obj.status = 401
+        obj.message = "user is not manager"
+        return obj
+      }
+    }
+  } else {
+    obj.status = 401
+    obj.message = "invalid user id"
+    return obj
+  }
+  if (pinCode) {
+    if (pinCode.length !== 6 && isNaN(pinCode)) {
+      obj.status = 401
+      obj.message = "invalid pincode"
+      return obj
+    }
+  }
+  if (locationId && locationId.length == 24) {
+    const find = await Location.findOne({ _id: ObjectId(locationId) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "invalid location id"
+      return obj
+    }
+  } else {
+    obj.status = 401
+    obj.message = "invalid location id"
+    return obj
+  }
+  if (stationId && stationId.length == 6 && !isNaN(stationId)) {
+    const find = await Station.findOne({ stationId })
+    if (find) {
+      obj.status = 401
+      obj.message = "station already exists"
+      return obj
+    }
+  } else {
+    obj.status = 401
+    obj.message = "invalid station id"
+    return obj
+  }
   if (_id) {
+    if (_id.length !== 24) {
+      obj.status = 401
+      obj.message = "Invalid _id"
+      return obj
+    }
     const find = await Station.findOne({ _id: ObjectId(_id) })
     if (!find) {
       obj.status = 401
@@ -614,66 +790,17 @@ async function createStation({ stationId, stationName, locationId, state, city, 
       obj.message = "station deleted successfully"
       return obj
     }
-    const findStationId = await Station.findOne({ stationId })
-    if (findStationId) {
-      await Station.updateOne(
-        { stationId },
-        {
-          $set: o
-        },
-        { new: true }
-      );
-      obj.message = "station updated successfully"
-      obj.data = o
-    } else {
-      obj.status = 401
-      obj.message = "cant update station id"
-    }
+    await Station.updateOne(
+      { _id: ObjectId(_id) },
+      {
+        $set: o
+      },
+      { new: true }
+    );
+    obj.message = "station updated successfully"
+    obj.data = o
   } else {
     if (stationName && locationId && stationId && state && city && address && pinCode && userId) {
-      if (userId && userId.length == 24) {
-        const find = await User.findOne({ _id: ObjectId(userId) })
-        if (!find) {
-          obj.status = 401
-          obj.message = "invalid user id"
-          return obj
-        } else {
-          let userType = find._doc.userType
-          if(userType !== "manager"){
-            obj.status = 401
-            obj.message = "user is not manager"
-            return obj
-          }
-        }
-      } else {
-        obj.status = 401
-        obj.message = "invalid user id"
-        return obj
-      }
-      if (locationId && locationId.length == 24) {
-        const find = await Location.findOne({ _id: ObjectId(locationId) })
-        if (!find) {
-          obj.status = 401
-          obj.message = "invalid location id"
-          return obj
-        }
-      } else {
-        obj.status = 401
-        obj.message = "invalid location id"
-        return obj
-      }
-      if (stationId && stationId.length == 6 && !isNaN(stationId)) {
-        const find = await Station.findOne({ stationId })
-        if (find) {
-          obj.status = 401
-          obj.message = "station already exists"
-          return obj
-        }
-      } else {
-        obj.status = 401
-        obj.message = "invalid station id"
-        return obj
-      }
       const SaveStation = new Station(o)
       SaveStation.save()
       obj.message = "data saved successfully"
@@ -692,6 +819,19 @@ async function createVehicleMaster({ vehicleName, vehicleType, vehicleBrand, veh
     const obj = {
       vehicleName, vehicleType, vehicleBrand, vehicleImage
     }
+    if (vehicleType) {
+      let statusCheck = ["gear", "non-gear"].includes(vehicleType)
+      if (!statusCheck) {
+        response.status = 401
+        response.message = "Invalid vehicle type"
+        return response
+      }
+    }
+    if (_id && _id.length !== 24) {
+      response.status = 401
+      response.message = "Invalid _id"
+      return response
+    }
     if (_id) {
       const find = await VehicleMaster.findOne({ _id: ObjectId(_id) })
       if (!find) {
@@ -701,18 +841,10 @@ async function createVehicleMaster({ vehicleName, vehicleType, vehicleBrand, veh
       }
       if (deleteRec) {
         await VehicleMaster.deleteOne({ _id: ObjectId(_id) })
-        response.message = "vehicle deleted successfully"
+        response.message = "vehicle master deleted successfully"
         response.status = 200
         response.data = { vehicleName }
         return response
-      }
-      if (vehicleType) {
-        let statusCheck = ["gear", "non-gear"].includes(vehicleType)
-        if (!statusCheck) {
-          response.status = 401
-          response.message = "Invalid vehicle type"
-          return response
-        }
       }
       await VehicleMaster.updateOne(
         { _id: ObjectId(_id) },
@@ -721,23 +853,23 @@ async function createVehicleMaster({ vehicleName, vehicleType, vehicleBrand, veh
         },
         { new: true }
       );
-      response.message = "user updated successfully"
+      response.message = "vehicle master updated successfully"
       response.data = obj
     } else {
       if (vehicleName && vehicleType && vehicleBrand && vehicleImage) {
         const find = await VehicleMaster.findOne({ vehicleName })
         if (find) {
           response.status = 401
-          response.message = "vehicle name already exists"
+          response.message = "vehicle master name already exists"
           return response
         }
         const SaveUser = new VehicleMaster(obj)
         SaveUser.save()
-        response.message = "data saved successfully"
+        response.message = "vehicle master saved successfully"
         response.data = obj
       } else {
         response.status = 401
-        response.message = "Invalid vehicle details"
+        response.message = "Invalid vehicle master details"
       }
     }
     return response

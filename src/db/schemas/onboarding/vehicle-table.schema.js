@@ -25,11 +25,6 @@ const vehicleTableSchema = new Schema({
         type: String,
         required: true
     },
-    locationId: {
-        type: Schema.Types.ObjectId,
-        ref: 'location',
-        required: true
-    },
     stationId: {
         type: String,
         ref: 'station',
@@ -44,6 +39,7 @@ const vehicleTableSchema = new Schema({
         required: true
     },    
     vehicleColor: {
+        enum: ["white", "black", "red", "blue", "green", "yellow"],
         type: String,
         required: true
     },

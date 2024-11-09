@@ -44,15 +44,18 @@ const orderSchema = new Schema({
         required: true
     },
     paymentStatus: { //
+        enum: ['pending', 'completed', 'canceled'],
         type: String,
         required: true
     },
     paymentMethod: { //
+        enum: ['cash', 'card', 'upi', 'wallet'],
         type: String,
         required: true
     },
-    userName: { //
-        type: String,
+    userId: { //
+        type: Schema.Types.ObjectId,
+        ref: 'user',
         required: true
     },
     email: { //

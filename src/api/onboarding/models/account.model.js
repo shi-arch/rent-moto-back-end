@@ -233,7 +233,7 @@ async function saveUser({ _id, userType, status, altContact, firstName, lastName
         response.status = 401
         response.message = "some details are missing"
       }
-    }    
+    }
   } catch (error) {
     throw new Error(error);
   }
@@ -300,20 +300,23 @@ async function getUserByContact(body) {
 
 async function sendOtp(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] };
-  const { email, contact, invoice } = o
+  const { email, contact } = o
   try {
-    let flag = true
     if (contact) {
       const isValidContact = contactValidation(contact)
       if (isValidContact) {
         const findUser = await User.findOne({ contact })
         if (findUser) {
-          let { _doc } = findUser
-          if (email && _doc.email !== email) {
-            flag = false
-            obj.message = "email and contact are not matching"
-            return obj
-          }
+          const contactOtp = Math.floor(100000 + Math.random() * 900000)
+          await User.updateOne(
+            { contact },
+            {
+              $set: { otp: contactOtp }
+            },
+            { new: true }
+          );
+          obj.data = contact
+          obj.message = "otp sent successfully on your regoistered contact number"
         } else {
           flag = false
           obj.message = "user does not exist"
@@ -322,57 +325,42 @@ async function sendOtp(o) {
       } else {
         flag = false
         obj.message = "contact is invalid"
+        obj.data = contact
         return obj
       }
-      if (email) {
-        const isValidEmail = emailValidation(email)
-        if (!isValidEmail) {
-          flag = false
-          obj.message = "invalid email"
-          return obj
+    } else if (email) {
+      const random = Math.floor(100000 + Math.random() * 900000)
+      let receiver = {
+        from: "kashyapshivram512@gmail.com",
+        to: email,
+        subject: "Rent moto user verification with otp service",
+        text: "Hi " + email + ", " + "Your verification otp is " + random
+      };
+      const response = await transporter.sendMail(receiver)
+      if (response) {
+        obj.data = response
+        const user = await User.findOne({ email })
+        if (user) {
+          await User.updateOne(
+            { email },
+            {
+              $set: { otp: random }
+            },
+            { new: true }
+          );
         }
+        obj.message = "otp sent successfully on your registered email"
+        obj.data = email
+      } else {
+        obj.status = 401
+        obj.data = email
+        obj.message = "data not found"
       }
     } else {
       obj.status = 401
-      obj.message = "invalid contact"
+      obj.message = "invalid email or contact"
+      obj.data = contact
       return obj
-    }
-    if (flag) {
-      if (email) {
-        const random = Math.floor(100000 + Math.random() * 900000)
-        let receiver = {
-          from: "kashyapshivram512@gmail.com",
-          to: email,
-          subject: invoice ? "Rent moto invoice" : "Rent moto email verification",
-          text: invoice ? invoice
-            : "Hi " + email + ", " + "Your verification otp is " + random
-        };
-        const response = await transporter.sendMail(receiver)
-        if (response) {
-          obj.data = response
-          const user = await User.findOne({ contact })
-          if (user) {
-            await User.updateOne(
-              { contact },
-              {
-                $set: { otp: random }
-              },
-              { new: true }
-            );
-          }
-          obj.message = "email sent successfully"
-        } else {
-          obj.status = 401
-          obj.message = "data not found"
-        }
-      }
-      if (contact) {
-        obj.message = "otp sent successfully"
-        obj.data = { ...obj.data, contact, otp: Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000 }
-      }
-    } else {
-      obj.status = 401
-      obj.message = "invalid data"
     }
     return obj;
   } catch (error) {

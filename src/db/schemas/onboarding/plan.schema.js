@@ -7,13 +7,12 @@ const planSchema = new Schema({
       required: true,
       unique: true
     },
+    planDuration: {
+      type: String,
+      required: true
+    },
     planPrice: {
       type: String,
-      required: true      
-    },
-    locationId: {
-      type: Schema.Types.ObjectId,
-      ref: 'location',
       required: true      
     },
     stationId: {
