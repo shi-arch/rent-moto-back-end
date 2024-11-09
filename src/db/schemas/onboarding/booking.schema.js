@@ -48,8 +48,7 @@ const bookingSchema = new Schema({
     },
     invoice: {
         type: Schema.Types.ObjectId,
-        ref: 'invoice-tbl',
-        required: true
+        ref: 'invoice-tbl'
     },  
     paymentMethod: {
         type: String,

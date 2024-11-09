@@ -336,7 +336,7 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
   } else {
     if (vehicleTableId && userId && BookingStartDateAndTime && BookingEndDateAndTime
       && bookingPrice && startTime && endTime && startDate &&
-      bookingStatus && paymentStatus && rideStatus && invoice
+      bookingStatus && paymentStatus && rideStatus
       && paymentMethod && paySuccessId && payInitFrom && endDate &&
       totalPrice && tax
     ) {
