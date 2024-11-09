@@ -7,15 +7,7 @@ const orderSchema = new Schema({
         unique: true,
         required: true
     },
-    vehicleNumber: { //
-        type: String,
-        required: true
-    },
-    vehicleImage: { //
-        type: String,
-        required: true
-    },
-    vehicleName: { //
+    vehicleId: { //
         type: String,
         required: true
     },
@@ -32,10 +24,6 @@ const orderSchema = new Schema({
         required: true
     },
     startTime: { //
-        type: String,
-        required: true
-    },
-    location: { //
         type: String,
         required: true
     },
@@ -58,18 +46,11 @@ const orderSchema = new Schema({
         ref: 'user',
         required: true
     },
-    email: { //
+    orderStatus: {
+        enum: ['pending', 'completed', 'canceled'],
         type: String,
         required: true
     },
-    contact: { //
-        type: String,
-        required: true
-    },
-    submittedDocument: { //
-        type: String,
-        required: true
-    }
     
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 

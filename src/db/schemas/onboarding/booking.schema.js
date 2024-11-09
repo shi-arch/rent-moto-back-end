@@ -7,6 +7,10 @@ const bookingSchema = new Schema({
         ref: 'vehicleTable',
         required: true
     }, 
+    bookingId: {
+        type: String,
+        required: true
+    }, 
     userId: {
         type: Schema.Types.ObjectId,
         ref: 'user',
@@ -27,9 +31,6 @@ const bookingSchema = new Schema({
         type: Object,
         required: true
     },
-    discount: {
-        type: String
-    },
     bookingStatus: {
         enum: ['pending', 'completed', 'canceled'],
         type: String,
@@ -45,11 +46,6 @@ const bookingSchema = new Schema({
         type: String,
         required: true
     },
-    pickupLocation: {
-        type: Schema.Types.ObjectId,
-        ref: 'station',
-        required: true
-    },
     invoice: {
         type: Schema.Types.ObjectId,
         ref: 'invoice-tbl',
@@ -57,7 +53,7 @@ const bookingSchema = new Schema({
     },  
     paymentMethod: {
         type: String,
-        enum: ['online', 'cash'],
+        enum: ['cash', 'card', 'upi', 'wallet'],
         required: true
     },
     payInitFrom: {
