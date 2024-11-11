@@ -72,6 +72,10 @@ router.post("/createBooking", async (req, res) => {
   vehiclesService.booking(req, res);
 })
 
+router.get("/getBookings", async (req, res) => {
+  vehiclesService.getBookings(req, res);
+})
+
 router.post("/createOrder", async (req, res) => {
   vehiclesService.createOrder(req, res);
 })

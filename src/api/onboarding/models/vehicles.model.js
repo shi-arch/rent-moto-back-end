@@ -108,7 +108,7 @@ async function createVehicle({ _id, vehicleId, stationId, vehicleNumber, freeKms
           return response
         }
       }
-      if(vehicleColor){
+      if (vehicleColor) {
         let statusCheck = ["white", "black", "red", "blue", "green", "yellow"].includes(vehicleColor)
         if (!statusCheck) {
           response.status = 401
@@ -212,17 +212,17 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
     discount, bookingStatus, paymentStatus, rideStatus, pickupLocation, invoice, paymentMethod, paySuccessId, payInitFrom,
     bookingId: uuidv4()
   }
-  if(_id && _id.length !== 24){
+  if (_id && _id.length !== 24) {
     obj.status = 401
     obj.message = "Invalid booking id"
     return obj
   }
-  if(discountPrice && isNaN(discountPrice)){
+  if (discountPrice && isNaN(discountPrice)) {
     obj.status = 401
     obj.message = "Invalid discount price"
     return obj
   }
-  if(vehicleTableId){
+  if (vehicleTableId) {
     const find = await vehicleTable.findOne({ _id: ObjectId(vehicleTableId) })
     if (!find) {
       obj.status = 401
@@ -230,8 +230,8 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
       return obj
     }
   }
-  if(userId){
-    if(userId.length !== 24){
+  if (userId) {
+    if (userId.length !== 24) {
       obj.status = 401
       obj.message = "Invalid user id"
       return obj
@@ -243,20 +243,20 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
       return obj
     }
   }
-  if(bookingPrice.discountPrice){
-    if(isNaN(bookingPrice.discountPrice)){
+  if (bookingPrice.discountPrice) {
+    if (isNaN(bookingPrice.discountPrice)) {
       obj.status = 401
       obj.message = "Invalid discount price"
       return obj
     }
   }
-  if(bookingPrice.extraAddonPrice){
-    if(isNaN(bookingPrice.extraAddonPrice)){
+  if (bookingPrice.extraAddonPrice) {
+    if (isNaN(bookingPrice.extraAddonPrice)) {
       obj.status = 401
       obj.message = "Invalid extraAddonPrice price"
       return obj
     }
-  }  
+  }
   if (bookingPrice) {
     if (isNaN(bookingPrice.totalPrice) || isNaN(bookingPrice.vehiclePrice) || isNaN(bookingPrice.tax) || isNaN(bookingPrice.roundPrice)) {
       obj.status = 401
@@ -272,7 +272,7 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
       return obj
     }
   }
-   if (paymentStatus) {
+  if (paymentStatus) {
     let check = ['pending', 'completed', 'canceled'].includes(paymentStatus)
     if (!check) {
       obj.status = 401
@@ -555,7 +555,7 @@ async function createPlan({ planName, planPrice, stationId, _id, deleteRec, plan
   try {
     if (_id || (planName && planPrice && stationId && planDuration)) {
       let o = { planName, planPrice, stationId, planDuration }
-      if(isNaN(planDuration)){
+      if (isNaN(planDuration)) {
         obj.status = 401
         obj.message = "invalid plan duration"
         return obj
@@ -576,7 +576,7 @@ async function createPlan({ planName, planPrice, stationId, _id, deleteRec, plan
           return obj
         }
       }
-      if(_id && _id.length !== 24){
+      if (_id && _id.length !== 24) {
         obj.status = 401
         obj.message = "invalid _id"
         return obj
@@ -747,7 +747,12 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 async function createStation({ stationId, stationName, locationId, state, city, userId, address, pinCode, latitude, longitude, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
   const o = { country: "India", stationId, stationName, locationId, state, city, address, pinCode, latitude, longitude, userId }
-  if (userId && userId.length == 24) {
+  if (userId) {
+    if (userId.length !== 24) {
+      obj.status = 401
+      obj.message = "invalid user id"
+      return obj
+    }
     const find = await User.findOne({ _id: ObjectId(userId) })
     if (!find) {
       obj.status = 401
@@ -761,28 +766,29 @@ async function createStation({ stationId, stationName, locationId, state, city, 
         return obj
       }
     }
-  } else {
-    obj.status = 401
-    obj.message = "invalid user id"
-    return obj
   }
-  if (pinCode) {
-    if (pinCode.length !== 6 && isNaN(pinCode)) {
+  if (locationId) {
+    if (locationId.length !== 24) {
       obj.status = 401
-      obj.message = "invalid pincode"
+      obj.message = "invalid location id"
       return obj
     }
-  }
-  if (locationId && locationId.length == 24) {
     const find = await Location.findOne({ _id: ObjectId(locationId) })
     if (!find) {
       obj.status = 401
       obj.message = "invalid location id"
       return obj
     }
+  }
+  if (pinCode && pinCode.length == 6) {
+    if (isNaN(pinCode)) {
+      obj.status = 401
+      obj.message = "invalid pincode"
+      return obj
+    }
   } else {
     obj.status = 401
-    obj.message = "invalid location id"
+    obj.message = "invalid pincode"
     return obj
   }
   if (stationId && stationId.length == 6 && !isNaN(stationId)) {
@@ -792,10 +798,6 @@ async function createStation({ stationId, stationName, locationId, state, city, 
       obj.message = "station already exists"
       return obj
     }
-  } else {
-    obj.status = 401
-    obj.message = "invalid station id"
-    return obj
   }
   if (_id) {
     if (_id.length !== 24) {
@@ -1034,6 +1036,137 @@ const getVehicleMasterData = async (query) => {
   return obj
 }
 
+
+const getBookings = async (query) => {
+  const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const {
+
+    vehicleTableId, bookingStartDate, bookingEndDate, bookingStartTime, bookingEndTime, bookingPrice, bookingStatus, paymentStatus, rideStatus, paymentMethod, payInitFrom, paySuccessId,
+    firstName, lastName, userType, contact, email,longitude, latitude, address,
+    stationName, stationId, locationName, city, state, pinCode,
+    vehicleName, vehicleType, vehicleBrand,
+    vehicleBookingStatus, vehicleStatus, freeKms, extraKmsCharges, vehicleNumber, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition,
+  } = query
+  let mainObj = query
+  if (mainObj._id) {
+    mainObj._id = ObjectId(query._id)
+  }
+  let startDate = null
+  let startTime = null
+  let endDate = null
+  let endTime = null
+  let totalPrice = null
+  let vehiclePrice = null
+  let tax = null
+  let roundPrice = null
+  let extraAddonPrice = null
+  if(bookingPrice){
+    totalPrice = bookingPrice.totalPrice
+    vehiclePrice = bookingPrice.vehiclePrice
+    tax = bookingPrice.tax
+    roundPrice = bookingPrice.roundPrice
+    extraAddonPrice = bookingPrice.extraAddonPrice
+  }
+  bookingStartDate && Date.parse(bookingStartDate) ? mainObj['BookingStartDateAndTime.startDate'] = bookingStartDate : null
+  bookingEndDate && Date.parse(bookingEndDate) ? mainObj['BookingEndDateAndTime.endDate'] = bookingEndDate : null
+  bookingStartTime ? mainObj['BookingStartDateAndTime.startTime'] = bookingStartTime : null
+  bookingEndTime ? mainObj['BookingEndDateAndTime.endTime'] = bookingEndTime : null
+  totalPrice ? mainObj.bookingPrice.totalPrice = totalPrice : null
+  vehiclePrice ? mainObj.bookingPrice.vehiclePrice = vehiclePrice : null
+  tax ? mainObj.bookingPrice.tax = tax : null
+  roundPrice ? mainObj.bookingPrice.roundPrice = roundPrice : null
+  extraAddonPrice ? mainObj.bookingPrice.extraAddonPrice = extraAddonPrice : null
+
+  bookingPrice ? mainObj.bookingPrice = bookingPrice : null
+  bookingStatus ? mainObj.bookingStatus = bookingStatus : null
+  paymentStatus ? mainObj.paymentStatus = paymentStatus : null
+  rideStatus ? mainObj.rideStatus = rideStatus : null
+  paymentMethod ? mainObj.paymentMethod = paymentMethod : null
+  payInitFrom ? mainObj.payInitFrom = payInitFrom : null
+  paySuccessId ? mainObj.paySuccessId = paySuccessId : null
+  const response = await Booking.find(mainObj)
+  if (response) {
+    const arr = []
+    for (let i = 0; i < response.length; i++) {
+      const { _doc } = response[i]
+      let o = _doc
+      if(o.bookingId == "564f1e1f-4a52-494e-ba8e-4cd2d71bd29e"){
+        console.log(o)
+      }
+      let find1 = null
+      let find2 = null
+      let find3 = null
+      let find4 = null
+      let find5 = null
+
+      let obj1 = {}
+      stationName ? obj1.stationName = stationName : null
+      stationId ? obj1.stationId = stationId : null
+      city ? obj1.city = city : null
+      state ? obj1.state = state : null
+      pinCode ? obj1.pinCode = pinCode : null
+      address ? obj1.address = address : null
+      latitude ? obj1.latitude = latitude : null
+      longitude ? obj1.longitude = longitude : null
+      find1 = await station.findOne({ ...obj1 })
+      if(find1){
+        let obj = {_id: ObjectId(find1._doc.locationId)}
+        locationName ? obj.locationName = locationName : null
+        find2 = await Location.findOne({ ...obj })     
+      }
+      let obj2 = {_id: ObjectId(o.vehicleTableId)}
+      vehicleBookingStatus ? obj2.vehicleBookingStatus = vehicleBookingStatus : null
+      vehicleStatus ? obj2.vehicleStatus = vehicleStatus : null
+      freeKms ? obj2.freeKms = freeKms : null
+      extraKmsCharges ? obj2.extraKmsCharges = extraKmsCharges : null
+      vehicleNumber ? obj2.vehicleNumber = vehicleNumber : null
+      vehicleModel ? obj2.vehicleModel = vehicleModel : null
+      vehicleColor ? obj2.vehicleColor = vehicleColor : null
+      perDayCost ? obj2.perDayCost = perDayCost : null
+      lastServiceDate && Date.parse(lastServiceDate) ? obj2.lastServiceDate = lastServiceDate : null
+      kmsRun ? obj2.kmsRun = kmsRun : null
+      isBooked ? obj2.isBooked = isBooked : null
+      condition ? obj2.condition = condition : null
+      find3 = await vehicleTable.findOne({ ...obj2 })
+      if(find3){
+        const obj = {_id: ObjectId(find3._doc.vehicleId)}
+        vehicleName ? obj.vehicleName = vehicleName : null
+        vehicleType ? obj.vehicleType = vehicleType : null
+        vehicleBrand ? obj.vehicleBrand = vehicleBrand : null
+        find4 = await vehicleMaster.findOne({ ...obj })
+      }
+      let obj3 = {_id: ObjectId(o.userId)}
+      contact ? obj3.contact = contact : null
+      find5 = await User.findOne({ ...obj3 })     
+
+      if (find1 && find2 && find3 && find4 && find5) {
+        delete find1._id
+        delete find2._id
+        delete find3._id
+        delete find4._id
+        delete find5._id
+        o = {
+          ...o,
+          ...find1?._doc,
+          ...find2?._doc,
+          ...find3?._doc,
+          ...find4?._doc,
+          ...find5?._doc
+        }
+        arr.push(o)
+      }
+    }
+    obj.data = arr
+  } else {
+    obj.status = 401
+    obj.message = "data not found"
+  }
+  if(!obj.data.length){
+    obj.message = "data not found"
+  }
+  return obj
+}
+
 const getVehicleTblData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   const { vehicleName, vehicleType, vehicleBrand, locationName, locationId, stationId, stationName } = query
@@ -1116,16 +1249,41 @@ const getLocationData = async (query) => {
 
 const getStationData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
+  const { locationName, stationName, stationId, address, city, pinCode, state, contact } = query
   let filter = query
   if (filter._id) {
     filter._id = ObjectId(query._id)
+  } else {
+    stationId ? filter.stationId = stationId : null
+    address ? filter.address = address : null
+    city ? filter.city = city : null
+    state ? filter.state = state : null
+    pinCode ? filter.pinCode = pinCode : null
   }
-  if(query.stationId) {
-    filter.stationId = ObjectId(query.stationId)
-  }
-  const response = await station.find({ ...filter })
+  const response = await station.find(filter)
   if (response) {
-    obj.data = response
+    const arr = []
+    for (let i = 0; i < response.length; i++) {
+      const { _doc } = response[i]
+      let o = _doc
+      let obj = { _id: ObjectId(o.locationId) }
+      locationName ? obj.locationName = locationName : null
+      const find = await location.findOne(obj)
+
+      let obj3 = { _id: ObjectId(o.userId) }
+      contact ? obj3.contact = contact : null
+      const find3 = await User.findOne({ ...obj3 })
+
+      if (find) {
+        o = {
+          ...o,
+          ...find?._doc,
+          ...find3?._doc
+        }
+        arr.push(o)
+      }
+    }
+    obj.data = arr
   } else {
     obj.status = 401
     obj.message = "data not found"
@@ -1228,6 +1386,7 @@ module.exports = {
   getPlanData,
   createInvoice,
   discountCoupons,
+  getBookings,
   createStation,
   searchVehicle,
   getLocations,

@@ -24,9 +24,6 @@ const bookingSchema = new Schema({
         type: Object,
         required: true
     },
-    extraAddon: {
-        type: String
-    },
     bookingPrice: {
         type: Object,
         required: true
