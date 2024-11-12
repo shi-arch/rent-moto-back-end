@@ -45,7 +45,7 @@ const startServer = async () => {
   );
 
   app.use(
-    cors({ origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'https://rent-moto-admin.vercel.app', 'https://rent-moto-admin-react.vercel.app'] })
+    cors({ origin: ['http://localhost:3000', 'https://rento.indyside.com', 'http://localhost:3001', 'http://localhost:5173', 'https://rent-moto-admin.vercel.app', 'https://rent-moto-admin-react.vercel.app'] })
   );
   app.use((req, res, next) => {
     //res.header("Access-Control-Allow-Origin",process.env.BASE_URL);
