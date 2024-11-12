@@ -619,11 +619,38 @@ async function createPlan({ planName, planPrice, stationId, _id, deleteRec, plan
   return obj
 }
 
-async function createInvoice({ orderId, pdfDoc, _id, deleteRec }) {
+async function createInvoice({ pdfDoc, _id, deleteRec, bookingId, paidInvoice }) {
   const obj = { status: 200, message: "invoice created successfully", data: [] }
-  const o = { orderId, pdfDoc }
+  const o = { pdfDoc, bookingId, paidInvoice }
   try {
+    if(paidInvoice){
+      let check = ['paid', 'unpaid'].includes(paidInvoice)
+      if (!check) {
+        obj.status = 401
+        obj.message = "Invalid paidInvoice"
+        return obj
+      }
+    }
+    if(bookingId){
+      if(bookingId.length == 36){
+        const find = await Booking.findOne({ bookingId })
+        if (!find) {
+          obj.status = 401
+          obj.message = "invalid order id"
+          return obj
+        }
+      } else {
+        obj.status = 401
+        obj.message = "invalid order id"
+        return obj
+      }
+    }
     if (_id) {
+      if(_id.length !== 24){
+        obj.status = 401
+        obj.message = "invalid _id"
+        return obj
+      }
       const find = await InvoiceTbl.findOne({ _id: ObjectId(_id) })
       if (!find) {
         obj.status = 401
@@ -646,15 +673,7 @@ async function createInvoice({ orderId, pdfDoc, _id, deleteRec }) {
       obj.message = "invoice updated successfully"
       obj.data = o
     } else {
-      if (orderId && pdfDoc) {
-        if (orderId) {
-          const find = await order.findOne({ orderId })
-          if (!find) {
-            obj.status = 401
-            obj.message = "invalid order id"
-            return obj
-          }
-        }
+      if (pdfDoc && bookingId) {
         o.invoiceNumber = Math.floor(100000 + Math.random() * 900000)
         const SavePlan = new InvoiceTbl(o)
         SavePlan.save()
@@ -672,71 +691,98 @@ async function createInvoice({ orderId, pdfDoc, _id, deleteRec }) {
 
 }
 
-async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAllowed, discountType, _id, deleteRec }) {
+async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAllowed, discountType, _id, deleteRec, isCouponActive }) {
   const obj = { status: 200, message: "invoice created successfully", data: [] }
-  if (_id || (couponName && vehicleType && usageAllowed && discountType)) {
-    let o = { couponName, vehicleType, allowedUsers, usageAllowed, discountType }
-    if (couponName) {
-      const find = await Coupon.findOne({ couponName })
-      if (find) {
+  let o = { couponName, vehicleType, allowedUsers, usageAllowed, discountType, isCouponActive: isCouponActive ? "active" : "inActive" }
+  if(isCouponActive){
+    let check = ['active', 'inActive'].includes(isCouponActive)
+    if (!check) {
+      obj.status = 401
+      obj.message = "Invalid isCouponActive"
+      return obj
+    }
+  }
+  if(couponName){
+    const find = await Coupon.findOne({ couponName })
+    if (find) {
+      obj.status = 401
+      obj.message = "coupon already exists"
+      return obj
+    }
+  }
+  if(vehicleType){
+    let check = ["gear", "non-gear", "all"].includes(vehicleType)
+    if (!check) {
+      obj.status = 401
+      obj.message = "Invalid vehicle type"
+      return obj
+    }
+  }
+  if(discountType){
+    let check = ['percentage', 'fixed'].includes(discountType)
+    if (!check) {
+      obj.status = 401
+      obj.message = "Invalid discount type"
+      return obj
+    }
+  }
+  if(allowedUsers){
+    for (let i = 0; i < allowedUsers.length; i++) {
+      const find = await User.findOne({ _id: ObjectId(allowedUsers[i]) })
+      if (!find) {
         obj.status = 401
-        obj.message = "coupon already exists"
+        obj.message = "Invalid user id"
+        return obj
+        break;        
+      }
+    }
+  }
+  if(_id){
+    if(_id.length !== 24){
+      obj.status = 401
+      obj.message = "invalid _id"
+      return obj
+    }
+    const find = await Coupon.findOne({ _id: ObjectId(_id) })
+    if (!find) {
+      obj.status = 401
+      obj.message = "Invalid _id"
+      return obj
+    }
+  }
+  if (_id) {
+    const result = await Coupon.findOne({ _id: ObjectId(_id) });
+    if (result) {
+      if (deleteRec) {
+        await Coupon.deleteOne({ _id: ObjectId(_id) })
+        obj.message = "Coupon deleted successfully"
         return obj
       }
-    }
-    if (discountType) {
-      let check = ['percentage', 'fixed'].includes(discountType)
-      if (!check) {
-        obj.status = 401
-        obj.message = "Invalid discount type"
-        return obj
-      }
-    }
-    if (vehicleType) {
-      let check = ["gear", "non-gear", "all"].includes(vehicleType)
-      if (!check) {
-        obj.status = 401
-        obj.message = "Invalid vehicle type"
-        return obj
-      }
-    }
-    if (allowedUsers && allowedUsers.length) {
-      for (let i = 0; i < allowedUsers.length; i++) {
-        const find = await User.findOne({ _id: ObjectId(allowedUsers[i]) })
-        if (!find) {
-          obj.status = 401
-          obj.message = "Invalid user id"
-          return obj
-        }
-      }
-    }
-    if (_id) {
-      const result = await Coupon.findOne({ _id: ObjectId(_id) });
-      if (result) {
-        if (deleteRec) {
-          await Coupon.deleteOne({ _id: ObjectId(_id) })
-          obj.message = "Coupon deleted successfully"
-          return obj
-        }
-        await Coupon.updateOne(
-          { _id: ObjectId(_id) },
-          {
-            $set: o
-          },
-          { new: true }
-        );
-        obj.message = "Coupon updated successfully"
-        obj.data = o
-      }
+      await Coupon.updateOne(
+        { _id: ObjectId(_id) },
+        {
+          $set: o
+        },
+        { new: true }
+      );
+      obj.message = "Coupon updated successfully"
+      obj.data = o
     } else {
+      obj.status = 401
+      obj.message = "Invalid coupon _id"
+      return obj
+    }
+  } else {
+    if(couponName && vehicleType && allowedUsers && usageAllowed && discountType){
       const SavePlan = new Coupon(o)
       SavePlan.save()
       obj.message = "new Coupon saved successfully"
       obj.data = o
+    } else {
+      obj.status = 401
+      obj.message = "data is missing"
     }
-  } else {
-    obj.status = 401
-    obj.message = "Invalid data"
+   
   }
   return obj
 }

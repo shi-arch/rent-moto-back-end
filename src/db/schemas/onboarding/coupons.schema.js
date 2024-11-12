@@ -23,6 +23,11 @@ const couponSchema = new Schema({
       type: String,
       enum: ['percentage', 'fixed'],
       required: true      
+    },
+    isCouponActive: {
+      type: String,
+      enum: ['active', 'inActive'],
+      required: true      
     }
   }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
   

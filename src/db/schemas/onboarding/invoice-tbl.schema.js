@@ -7,13 +7,18 @@ const invoiceSchema = new Schema({
       required: true,
       unique: true
     },
-    orderId: {
+    bookingId: {
       type: String,
       required: true  
     },
     pdfDoc: {
       type: String,
       required: true      
+    },
+    paidInvoice: {
+      type: String,
+      enum: ['paid', 'unpaid'],
+      required: true
     }
   }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
   
