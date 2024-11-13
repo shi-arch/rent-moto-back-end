@@ -1410,7 +1410,7 @@ const getStationData = async (query) => {
       contact ? obj3.contact = contact : null
       const find3 = await User.findOne({ ...obj3 })
 
-      if (find) {
+      if (find && find3) {
         o = {
           ...o,
           ...find?._doc,
