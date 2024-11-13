@@ -80,7 +80,7 @@ const createBookingDuration = async ({ bookingDuration, attachedVehicles, bookin
 }
 
 
-async function createVehicle({ _id, vehicleId, stationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, deleteRec, vehicleBookingStatus, vehicleStatus }) {
+async function createVehicle({ _id, vehicleId, stationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, deleteRec, vehicleBookingStatus, vehicleStatus, vehiclePlan }) {
   const response = { status: "200", message: "data fetched successfully", data: [] }
   try {
     if (_id || (vehicleId && vehicleBookingStatus && vehicleStatus && stationId && vehicleNumber && freeKms && extraKmsCharges && vehicleModel && vehicleColor && perDayCost && lastServiceDate && kmsRun && isBooked && condition)) {
@@ -89,6 +89,26 @@ async function createVehicle({ _id, vehicleId, stationId, vehicleNumber, freeKms
         if (!findStation) {
           response.status = 401
           response.message = "Invalid stationId"
+          return response
+        }
+      }
+      if (vehiclePlan && vehiclePlan.length == 24) {
+        const findPlan = await Plan.findOne({ _id: ObjectId(vehiclePlan) })
+        if (!findPlan) {
+          response.status = 401
+          response.message = "Invalid vehicle plan"
+          return response
+        }
+      } else {
+        response.status = 401
+        response.message = "Invalid vehicle plan"
+        return response
+      }
+      if (isBooked) {
+        let statusCheck = ["false", "true"].includes(isBooked.toString())
+        if (!statusCheck) {
+          response.status = 401
+          response.message = "Invalid isBooked value"
           return response
         }
       }
@@ -145,7 +165,7 @@ async function createVehicle({ _id, vehicleId, stationId, vehicleNumber, freeKms
         }
       }
       const o = {
-        vehicleBookingStatus, vehicleStatus, vehicleId, stationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition
+        vehicleBookingStatus, vehicleStatus, vehicleId, stationId, vehicleNumber, freeKms, extraKmsCharges, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition, vehiclePlan
       }
       if (_id) {
         const find = await VehicleTable.findOne({ _id: ObjectId(_id) })
@@ -210,7 +230,7 @@ async function booking({ vehicleTableId, userId, BookingStartDateAndTime, Bookin
   const o = {
     vehicleTableId, userId, BookingStartDateAndTime, BookingEndDateAndTime, extraAddon, bookingPrice,
     discount, bookingStatus, paymentStatus, rideStatus, pickupLocation, invoice, paymentMethod, paySuccessId, payInitFrom,
-    bookingId: uuidv4()
+    bookingId: Math.floor(100000 + Math.random() * 900000)
   }
   if (_id && _id.length !== 24) {
     obj.status = 401
@@ -623,7 +643,7 @@ async function createInvoice({ pdfDoc, _id, deleteRec, bookingId, paidInvoice })
   const obj = { status: 200, message: "invoice created successfully", data: [] }
   const o = { pdfDoc, bookingId, paidInvoice }
   try {
-    if(paidInvoice){
+    if (paidInvoice) {
       let check = ['paid', 'unpaid'].includes(paidInvoice)
       if (!check) {
         obj.status = 401
@@ -631,8 +651,8 @@ async function createInvoice({ pdfDoc, _id, deleteRec, bookingId, paidInvoice })
         return obj
       }
     }
-    if(bookingId){
-      if(bookingId.length == 36){
+    if (bookingId) {
+      if (bookingId.length == 36) {
         const find = await Booking.findOne({ bookingId })
         if (!find) {
           obj.status = 401
@@ -646,7 +666,7 @@ async function createInvoice({ pdfDoc, _id, deleteRec, bookingId, paidInvoice })
       }
     }
     if (_id) {
-      if(_id.length !== 24){
+      if (_id.length !== 24) {
         obj.status = 401
         obj.message = "invalid _id"
         return obj
@@ -694,7 +714,7 @@ async function createInvoice({ pdfDoc, _id, deleteRec, bookingId, paidInvoice })
 async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAllowed, discountType, _id, deleteRec, isCouponActive }) {
   const obj = { status: 200, message: "invoice created successfully", data: [] }
   let o = { couponName, vehicleType, allowedUsers, usageAllowed, discountType, isCouponActive: isCouponActive ? "active" : "inActive" }
-  if(isCouponActive){
+  if (isCouponActive) {
     let check = ['active', 'inActive'].includes(isCouponActive)
     if (!check) {
       obj.status = 401
@@ -702,7 +722,7 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
       return obj
     }
   }
-  if(couponName){
+  if (couponName) {
     const find = await Coupon.findOne({ couponName })
     if (find) {
       obj.status = 401
@@ -710,7 +730,7 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
       return obj
     }
   }
-  if(vehicleType){
+  if (vehicleType) {
     let check = ["gear", "non-gear", "all"].includes(vehicleType)
     if (!check) {
       obj.status = 401
@@ -718,7 +738,7 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
       return obj
     }
   }
-  if(discountType){
+  if (discountType) {
     let check = ['percentage', 'fixed'].includes(discountType)
     if (!check) {
       obj.status = 401
@@ -726,19 +746,19 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
       return obj
     }
   }
-  if(allowedUsers){
+  if (allowedUsers) {
     for (let i = 0; i < allowedUsers.length; i++) {
       const find = await User.findOne({ _id: ObjectId(allowedUsers[i]) })
       if (!find) {
         obj.status = 401
         obj.message = "Invalid user id"
         return obj
-        break;        
+        break;
       }
     }
   }
-  if(_id){
-    if(_id.length !== 24){
+  if (_id) {
+    if (_id.length !== 24) {
       obj.status = 401
       obj.message = "invalid _id"
       return obj
@@ -773,7 +793,7 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
       return obj
     }
   } else {
-    if(couponName && vehicleType && allowedUsers && usageAllowed && discountType){
+    if (couponName && vehicleType && allowedUsers && usageAllowed && discountType) {
       const SavePlan = new Coupon(o)
       SavePlan.save()
       obj.message = "new Coupon saved successfully"
@@ -782,7 +802,7 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
       obj.status = 401
       obj.message = "data is missing"
     }
-   
+
   }
   return obj
 }
@@ -1088,7 +1108,7 @@ const getBookings = async (query) => {
   const {
 
     vehicleTableId, bookingStartDate, bookingEndDate, bookingStartTime, bookingEndTime, bookingPrice, bookingStatus, paymentStatus, rideStatus, paymentMethod, payInitFrom, paySuccessId,
-    firstName, lastName, userType, contact, email,longitude, latitude, address,
+    firstName, lastName, userType, contact, email, longitude, latitude, address,
     stationName, stationId, locationName, city, state, pinCode,
     vehicleName, vehicleType, vehicleBrand,
     vehicleBookingStatus, vehicleStatus, freeKms, extraKmsCharges, vehicleNumber, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition,
@@ -1106,7 +1126,7 @@ const getBookings = async (query) => {
   let tax = null
   let roundPrice = null
   let extraAddonPrice = null
-  if(bookingPrice){
+  if (bookingPrice) {
     totalPrice = bookingPrice.totalPrice
     vehiclePrice = bookingPrice.vehiclePrice
     tax = bookingPrice.tax
@@ -1136,7 +1156,7 @@ const getBookings = async (query) => {
     for (let i = 0; i < response.length; i++) {
       const { _doc } = response[i]
       let o = _doc
-      if(o.bookingId == "564f1e1f-4a52-494e-ba8e-4cd2d71bd29e"){
+      if (o.bookingId == "564f1e1f-4a52-494e-ba8e-4cd2d71bd29e") {
         console.log(o)
       }
       let find1 = null
@@ -1155,12 +1175,12 @@ const getBookings = async (query) => {
       latitude ? obj1.latitude = latitude : null
       longitude ? obj1.longitude = longitude : null
       find1 = await station.findOne({ ...obj1 })
-      if(find1){
-        let obj = {_id: ObjectId(find1._doc.locationId)}
+      if (find1) {
+        let obj = { _id: ObjectId(find1._doc.locationId) }
         locationName ? obj.locationName = locationName : null
-        find2 = await Location.findOne({ ...obj })     
+        find2 = await Location.findOne({ ...obj })
       }
-      let obj2 = {_id: ObjectId(o.vehicleTableId)}
+      let obj2 = { _id: ObjectId(o.vehicleTableId) }
       vehicleBookingStatus ? obj2.vehicleBookingStatus = vehicleBookingStatus : null
       vehicleStatus ? obj2.vehicleStatus = vehicleStatus : null
       freeKms ? obj2.freeKms = freeKms : null
@@ -1174,16 +1194,16 @@ const getBookings = async (query) => {
       isBooked ? obj2.isBooked = isBooked : null
       condition ? obj2.condition = condition : null
       find3 = await vehicleTable.findOne({ ...obj2 })
-      if(find3){
-        const obj = {_id: ObjectId(find3._doc.vehicleId)}
+      if (find3) {
+        const obj = { _id: ObjectId(find3._doc.vehicleId) }
         vehicleName ? obj.vehicleName = vehicleName : null
         vehicleType ? obj.vehicleType = vehicleType : null
         vehicleBrand ? obj.vehicleBrand = vehicleBrand : null
         find4 = await vehicleMaster.findOne({ ...obj })
       }
-      let obj3 = {_id: ObjectId(o.userId)}
+      let obj3 = { _id: ObjectId(o.userId) }
       contact ? obj3.contact = contact : null
-      find5 = await User.findOne({ ...obj3 })     
+      find5 = await User.findOne({ ...obj3 })
 
       if (find1 && find2 && find3 && find4 && find5) {
         delete find1._id
@@ -1207,7 +1227,7 @@ const getBookings = async (query) => {
     obj.status = 401
     obj.message = "data not found"
   }
-  if(!obj.data.length){
+  if (!obj.data.length) {
     obj.message = "data not found"
   }
   return obj
@@ -1215,8 +1235,19 @@ const getBookings = async (query) => {
 
 const getVehicleTblData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const { vehicleName, vehicleType, vehicleBrand, locationName, locationId, stationId, stationName } = query
-  let filter = query
+  const { vehicleName, vehicleType, vehicleBrand, locationName, locationId, stationId, planIds, stationName, startDate, startTime, endDate, endTime } = query
+  let momStartTime = moment(startTime ? startTime : "00:00 AM", "hh:mm A");
+  let momEndTime = moment(endTime ? endTime : "00:00 AM", "hh:mm A");
+  let getStartDate = startDate
+  let getStartTime = { hours: new Date(momStartTime).getHours(), minutes: new Date(momStartTime).getMinutes() }
+  let getEndDate = endDate
+  let getEndTime = { hours: new Date(momEndTime).getHours(), minutes: new Date(momEndTime).getMinutes() }
+  let filter = JSON.parse(JSON.stringify(query))
+  delete filter.planIds
+  let checkPlanIds = planIds ? JSON.parse(planIds) : []
+  if (checkPlanIds){
+    filter.vehiclePlan = { $in: checkPlanIds }
+  }
   if (filter._id) {
     filter._id = ObjectId(query._id)
   }
@@ -1225,35 +1256,94 @@ const getVehicleTblData = async (query) => {
     const arr = []
     for (let i = 0; i < response.length; i++) {
       const { _doc } = response[i]
+      let bookingFlag = false
       let o = _doc
-
+      if (o && o.vehiclePlan) {
+        const findPlan = await Plan.findOne({ _id: ObjectId(o.vehiclePlan) }, {stationId: 0, _id: 0})
+        o = { ...o, ...findPlan._doc }
+      }
+      let vehicleCount = 0
+      if (o.isBooked == "true") {
+        const find = await Booking.findOne({ vehicleTableId: o._id }, { BookingStartDateAndTime: 1, BookingEndDateAndTime: 1, _id: 0 })
+        if (find) {
+          let _doc = find._doc
+          let BookingStartDateAndTime = _doc.BookingStartDateAndTime
+          let BookingEndDateAndTime = _doc.BookingEndDateAndTime
+          if (BookingEndDateAndTime && BookingStartDateAndTime) {
+            const { startDate, startTime } = BookingStartDateAndTime
+            const { endDate, endTime } = BookingEndDateAndTime
+            let bookingStartHours = new Date(moment(startTime, "hh:mm A")).getHours()
+            let bookingEndHours = new Date(moment(endTime, "hh:mm A")).getHours()
+            let bookingStartMinutes = new Date(moment(startTime, "hh:mm A")).getMinutes()
+            let bookingEndMinutes = new Date(moment(endTime, "hh:mm A")).getMinutes()
+            let bookingStartDate = moment(startDate).add(bookingStartHours, 'hours').add(bookingStartMinutes, 'minutes')
+            bookingStartDate = new Date(bookingStartDate.format()).getTime()
+            let currentStartDate = moment(getStartDate).add(getStartTime.hours, 'hours').add(getStartTime.minutes, 'minutes')
+            currentStartDate = new Date(currentStartDate.format()).getTime()
+            let currentEndDate = moment(getEndDate).add(getEndTime.hours, 'hours').add(getEndTime.minutes, 'minutes')
+            currentEndDate = new Date(currentEndDate.format()).getTime()
+            let bookingEndDate = moment(endDate).add(bookingEndHours, 'hours').add(bookingEndMinutes, 'minutes')
+            bookingEndDate = new Date(bookingEndDate.format()).getTime()
+            if (currentStartDate >= bookingStartDate && currentStartDate <= bookingEndDate) {
+              bookingFlag = true
+            } else if (currentEndDate >= bookingStartDate && currentStartDate <= bookingEndDate) {
+              bookingFlag = true
+            } else {
+              bookingFlag = false
+            }
+            if (!bookingFlag) {
+              vehicleCount = vehicleCount + 1
+            }
+          } else {
+            obj.status = 401
+            obj.message = "Something went wrong"
+            return obj
+          }
+        }
+      }
       let obj1 = { _id: ObjectId(o.vehicleId) }
       vehicleName ? obj1.vehicleName = vehicleName : null
       vehicleType ? obj1.vehicleType = vehicleType : null
       vehicleBrand ? obj1.vehicleBrand = vehicleBrand : null
       const find1 = await vehicleMaster.findOne({ ...obj1 })
 
-      const obj2 = { _id: ObjectId(o.locationId) }
-      locationName ? obj2.locationName = locationName : null
-      const find2 = await location.findOne(obj2)
-
-      let obj3 = {}
+      let obj3 = { stationId: o.stationId }
       stationName ? obj3.stationName = stationName : null
-      stationId ? obj3.stationId = stationId : null
       locationId ? obj3.locationId = locationId : null
       const find3 = await station.findOne({ ...obj3 })
-
+      let find2 = null
+      if (find3) {
+        const obj = { _id: ObjectId(find3._doc.locationId) }
+        locationName ? obj.locationName = locationName : null
+        find2 = await Location.findOne({ ...obj })
+      }
       if (find1 && find2 && find3) {
-        o = {
-          ...o,
-          ...find1?._doc,
-          ...find2?._doc,
-          ...find3?._doc
+        let find = null
+        if (arr.length) {
+          find = arr.find(ele => ele.stationId === find3._doc.stationId && ele.vehicleName === find1._doc.vehicleName)
+          if (find && !bookingFlag) {
+            //if (find) {
+            find.vehicleCount = find.vehicleCount + 1
+            const index = arr.findIndex(ele => ele.stationId === find3._doc.stationId && vehicleName === find1._doc.vehicleName)
+            arr[index] = find
+          }
         }
-        arr.push(o)
+        if (!find) {
+          o = {
+            ...o,
+            ...find1?._doc,
+            ...find2?._doc,
+            ...find3?._doc,
+            vehicleCount: 1
+          }
+          arr.push(o)
+        }
       }
     }
     obj.data = arr
+    if (!obj.data.length) {
+      obj.message = "data not found"
+    }
   } else {
     obj.status = 401
     obj.message = "data not found"

@@ -228,7 +228,7 @@ async function saveUser({ _id, userType, status, altContact, firstName, lastName
         const SaveUser = new User(obj)
         SaveUser.save()
         response.message = "data saved successfully"
-        response.data = obj
+        response.data = SaveUser._doc
       } else {
         response.status = 401
         response.message = "some details are missing"
