@@ -1242,14 +1242,17 @@ const getVehicleTblData = async (query) => {
   let getStartTime = { hours: new Date(momStartTime).getHours(), minutes: new Date(momStartTime).getMinutes() }
   let getEndDate = endDate
   let getEndTime = { hours: new Date(momEndTime).getHours(), minutes: new Date(momEndTime).getMinutes() }
-  let filter = JSON.parse(JSON.stringify(query))
-  delete filter.planIds
-  let checkPlanIds = planIds ? JSON.parse(planIds) : []
-  if (checkPlanIds){
-    filter.vehiclePlan = { $in: checkPlanIds }
-  }
-  if (filter._id) {
-    filter._id = ObjectId(query._id)
+  let filter = {}
+  if (query && Object.keys(query).length) {
+    filter = JSON.parse(JSON.stringify(query))
+    delete filter.planIds
+    let checkPlanIds = planIds ? JSON.parse(planIds) : []
+    if (checkPlanIds) {
+      filter.vehiclePlan = { $in: checkPlanIds }
+    }
+    if (filter._id) {
+      filter._id = ObjectId(query._id)
+    }
   }
   const response = await vehicleTable.find(filter)
   if (response) {
@@ -1259,7 +1262,7 @@ const getVehicleTblData = async (query) => {
       let bookingFlag = false
       let o = _doc
       if (o && o.vehiclePlan) {
-        const findPlan = await Plan.findOne({ _id: ObjectId(o.vehiclePlan) }, {stationId: 0, _id: 0})
+        const findPlan = await Plan.findOne({ _id: ObjectId(o.vehiclePlan) }, { stationId: 0, _id: 0 })
         o = { ...o, ...findPlan._doc }
       }
       let vehicleCount = 0
@@ -1385,17 +1388,16 @@ const getLocationData = async (query) => {
 
 const getStationData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const { locationName, stationName, stationId, address, city, pinCode, state, contact } = query
-  let filter = query
-  if (filter._id) {
-    filter._id = ObjectId(query._id)
-  } else {
-    stationId ? filter.stationId = stationId : null
-    address ? filter.address = address : null
-    city ? filter.city = city : null
-    state ? filter.state = state : null
-    pinCode ? filter.pinCode = pinCode : null
-  }
+  const { locationName, stationName, stationId, address, city, pinCode, state, contact, locationId, _id } = query
+  let filter = {}
+  _id ? filter._id = ObjectId(_id) : null
+  locationId ? filter.locationId = ObjectId(locationId) : null
+  stationName ? filter.stationName = stationName : null
+  stationId ? filter.stationId = stationId : null
+  address ? filter.address = address : null
+  city ? filter.city = city : null
+  state ? filter.state = state : null
+  pinCode ? filter.pinCode = pinCode : null
   const response = await station.find(filter)
   if (response) {
     const arr = []
@@ -1409,12 +1411,16 @@ const getStationData = async (query) => {
       let obj3 = { _id: ObjectId(o.userId) }
       contact ? obj3.contact = contact : null
       const find3 = await User.findOne({ ...obj3 })
-
-      if (find && find3) {
+      if (find) {
         o = {
           ...o,
-          ...find?._doc,
-          ...find3?._doc
+          ...find?._doc
+        }
+        if (find3 && find3?._doc?.userType === "manager") {
+          o = {
+            ...o,
+            ...find3?._doc
+          }
         }
         arr.push(o)
       }

@@ -125,7 +125,7 @@ async function verifyOtp({ otp, contact, email }) {
   if (email) {
     userCred = { email }
   }
-  const result = await User.findOne({ userCred, otp });
+  const result = await User.findOne({ ...userCred, otp });
   if (!result) {
     throw new Error(errorMessages.USER_NOT_FOUND);
   }

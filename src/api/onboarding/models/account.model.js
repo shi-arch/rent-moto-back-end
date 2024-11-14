@@ -394,7 +394,14 @@ async function verify({ type, otp, contact }) {
       }
     } else {
       if (type == "contact" && otp == "123456") {
-        obj.message = "otp verified successfully"
+        const findUser = await User.findOne({ contact })
+        if (findUser) {
+          obj.data = findUser
+          obj.message = "otp verified successfully"
+        } else {
+          obj.status = 401
+          obj.message = "invalid contact"
+        }
       }
     }
   } else {

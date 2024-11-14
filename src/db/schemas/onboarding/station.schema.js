@@ -11,10 +11,14 @@ const stationSchema = new Schema({
       required: true,
       unique: true
     },
+    locationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'location',
+      required: true
+    },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'user',
-      required: true
+      ref: 'user'
     },
     country: {
       type: String,
