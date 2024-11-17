@@ -67,7 +67,7 @@ async function updateUser({ _id, userType, firstName, contact, lastName, email }
 
 async function getAllUsers(o) {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const response = await User.find({ ...o })
+  const response = await User.find({ ...o }, { otp: 0, password: 0})
   if (response && response.length) {
     obj.data = response
   } else {
@@ -93,9 +93,14 @@ async function getAllDataCount() {
   return obj
 }
 
-async function saveUser({ _id, userType, status, altContact, firstName, lastName, otp, contact, email, password, deleteRec, kycApproved, isEmailVerified, isContactVerified, drivingLicence, idProof, addressProof }) {
+async function saveUser({ _id, userType, status, altContact, firstName, lastName, contact, email, password, deleteRec, kycApproved, isEmailVerified, isContactVerified, drivingLicence, idProof, addressProof }) {
   const response = { status: "200", message: "data fetched successfully", data: [] }
   try {
+    if (_id && _id.length !== 24) {
+      response.status = 401
+      response.message = "Invalid _id"
+      return response
+    }
     if (contact) {
       const isValid = contactValidation(contact)
       if (!isValid) {
@@ -103,11 +108,13 @@ async function saveUser({ _id, userType, status, altContact, firstName, lastName
         response.message = "Invalid phone number"
         return response
       } else {
-        const find = await User.findOne({ contact })
-        if (find) {
-          response.status = 401
-          response.message = "this contact number already exists"
-          return response
+        if (!_id) {
+          const find = await User.findOne({ contact })
+          if (find) {
+            response.status = 401
+            response.message = "this contact number already exists"
+            return response
+          }
         }
       }
     }
@@ -190,39 +197,34 @@ async function saveUser({ _id, userType, status, altContact, firstName, lastName
       }
     }
     const obj = {
-      addressProof, drivingLicence, idProof, isContactVerified: checkIsContactVerified, isEmailVerified: checkIsEmailVerified, otp, kycApproved: checkKycApproved, userType: checkUserType, status: checkStatus, altContact, firstName, lastName, contact, email, password, otp: Math.floor(1000 + Math.random() * 9000)
+      addressProof, drivingLicence, idProof, isContactVerified: checkIsContactVerified, isEmailVerified: checkIsEmailVerified, kycApproved: checkKycApproved, userType: checkUserType, status: checkStatus, altContact, firstName, lastName, contact, email, password
     }
     if (_id) {
-      if (_id && _id.length == 24) {
-        const find = await User.findOne({ _id: ObjectId(_id) })
-        if (!find) {
-          response.status = 401
-          response.message = "Invalid user id"
-          return response
-        } else {
-          if (deleteRec) {
-            await User.deleteOne({ _id: ObjectId(_id) })
-            response.message = "user deleted successfully"
-            response.status = 200
-            response.data = { _id }
-            return response
-          }
-          delete obj._id
-          await User.updateOne(
-            { _id: ObjectId(_id) },
-            {
-              $set: obj
-            },
-            { new: true }
-          );
-          response.message = "user updated successfully"
-          response.data = obj
-        }
-      } else {
+      const find = await User.findOne({ _id: ObjectId(_id) })
+      if (!find) {
         response.status = 401
         response.message = "Invalid user id"
         return response
+      } else {
+        if (deleteRec) {
+          await User.deleteOne({ _id: ObjectId(_id) })
+          response.message = "user deleted successfully"
+          response.status = 200
+          response.data = { _id }
+          return response
+        }
+        delete obj._id
+        await User.updateOne(
+          { _id: ObjectId(_id) },
+          {
+            $set: obj
+          },
+          { new: true }
+        );
+        response.message = "user updated successfully"
+        response.data = obj
       }
+
     } else {
       if (firstName && lastName && contact && email) {
         const SaveUser = new User(obj)

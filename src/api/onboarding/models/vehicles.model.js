@@ -813,6 +813,16 @@ async function discountCoupons({ couponName, vehicleType, allowedUsers, usageAll
 async function createStation({ stationId, stationName, locationId, state, city, userId, address, pinCode, latitude, longitude, _id, deleteRec }) {
   const obj = { status: 200, message: "location created successfully", data: [] }
   const o = { country: "India", stationId, stationName, locationId, state, city, address, pinCode, latitude, longitude, userId }
+  if (_id && _id.length !== 24) {
+    obj.status = 401
+    obj.message = "invalid _id"
+    return obj
+  }
+  if(_id && stationId){
+    obj.status = 401
+    obj.message = "station id cant be updated"
+    return obj
+  }
   if (userId) {
     if (userId.length !== 24) {
       obj.status = 401
@@ -857,7 +867,7 @@ async function createStation({ stationId, stationName, locationId, state, city, 
     obj.message = "invalid pincode"
     return obj
   }
-  if (stationId && stationId.length == 6 && !isNaN(stationId)) {
+  if (stationId && stationId.length == 6 && !isNaN(stationId) && !_id) {
     const find = await Station.findOne({ stationId })
     if (find) {
       obj.status = 401
@@ -866,15 +876,10 @@ async function createStation({ stationId, stationName, locationId, state, city, 
     }
   }
   if (_id) {
-    if (_id.length !== 24) {
-      obj.status = 401
-      obj.message = "Invalid _id"
-      return obj
-    }
     const find = await Station.findOne({ _id: ObjectId(_id) })
     if (!find) {
       obj.status = 401
-      obj.message = "Invalid station id"
+      obj.message = "Invalid _id"
       return obj
     }
     if (deleteRec) {
@@ -1106,14 +1111,13 @@ const getVehicleMasterData = async (query) => {
 const getBookings = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
   const {
-
     vehicleTableId, bookingStartDate, bookingEndDate, bookingStartTime, bookingEndTime, bookingPrice, bookingStatus, paymentStatus, rideStatus, paymentMethod, payInitFrom, paySuccessId,
     firstName, lastName, userType, contact, email, longitude, latitude, address,
     stationName, stationId, locationName, city, state, pinCode,
     vehicleName, vehicleType, vehicleBrand,
     vehicleBookingStatus, vehicleStatus, freeKms, extraKmsCharges, vehicleNumber, vehicleModel, vehicleColor, perDayCost, lastServiceDate, kmsRun, isBooked, condition,
   } = query
-  let mainObj = query
+  let mainObj = {}
   if (mainObj._id) {
     mainObj._id = ObjectId(query._id)
   }
@@ -1247,7 +1251,7 @@ const getVehicleTblData = async (query) => {
     filter = JSON.parse(JSON.stringify(query))
     delete filter.planIds
     let checkPlanIds = planIds ? JSON.parse(planIds) : []
-    if (checkPlanIds) {
+    if (checkPlanIds && checkPlanIds.length) {
       filter.vehiclePlan = { $in: checkPlanIds }
     }
     if (filter._id) {
@@ -1377,8 +1381,18 @@ const getLocationData = async (query) => {
     filter._id = ObjectId(query._id)
   }
   const response = await Location.find({ ...filter })
-  if (response) {
-    obj.data = response
+  const arr = []
+  if (response && response.length) {
+    for(let i = 0; i < response.length; i++) {
+      const { _doc } = response[i]
+      let o = _doc
+      const find = await station.find({locationId: ObjectId(o._id)})
+      if (find) {
+       o.stationCount = find.length
+       arr.push(o)
+      }
+    }
+    obj.data = arr
   } else {
     obj.status = 401
     obj.message = "data not found"
@@ -1404,13 +1418,13 @@ const getStationData = async (query) => {
     for (let i = 0; i < response.length; i++) {
       const { _doc } = response[i]
       let o = _doc
-      let obj = { _id: ObjectId(o.locationId) }
+      let obj = {_id: ObjectId(o.locationId)}
       locationName ? obj.locationName = locationName : null
       const find = await location.findOne(obj)
-
+      
       let obj3 = { _id: ObjectId(o.userId) }
       contact ? obj3.contact = contact : null
-      const find3 = await User.findOne({ ...obj3 })
+      const find3 = await User.findOne({ ...obj3 }, {_id: 0, firstName: 1, lastName: 1, contact: 1, email: 1})
       if (find) {
         o = {
           ...o,
