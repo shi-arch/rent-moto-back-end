@@ -1312,17 +1312,17 @@ const getVehicleTblData = async (query) => {
       vehicleName ? obj1.vehicleName = vehicleName : null
       vehicleType ? obj1.vehicleType = vehicleType : null
       vehicleBrand ? obj1.vehicleBrand = vehicleBrand : null
-      const find1 = await vehicleMaster.findOne({ ...obj1 })
+      const find1 = await vehicleMaster.findOne({ ...obj1 }, {_id: 0})
 
       let obj3 = { stationId: o.stationId }
       stationName ? obj3.stationName = stationName : null
       locationId ? obj3.locationId = locationId : null
-      const find3 = await station.findOne({ ...obj3 })
+      const find3 = await station.findOne({ ...obj3 }, {_id: 0})
       let find2 = null
       if (find3) {
         const obj = { _id: ObjectId(find3._doc.locationId) }
         locationName ? obj.locationName = locationName : null
-        find2 = await Location.findOne({ ...obj })
+        find2 = await Location.findOne({ ...obj }, {_id: 0})
       }
       if (find1 && find2 && find3) {
         let find = null
@@ -1420,7 +1420,7 @@ const getStationData = async (query) => {
       let o = _doc
       let obj = {_id: ObjectId(o.locationId)}
       locationName ? obj.locationName = locationName : null
-      const find = await location.findOne(obj)
+      const find = await location.findOne(obj, {_id: 0})
       
       let obj3 = { _id: ObjectId(o.userId) }
       contact ? obj3.contact = contact : null
