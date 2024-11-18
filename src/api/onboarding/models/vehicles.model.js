@@ -1239,7 +1239,7 @@ const getBookings = async (query) => {
 
 const getVehicleTblData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const { vehicleName, vehicleType, vehicleBrand, locationName, locationId, stationId, planIds, stationName, startDate, startTime, endDate, endTime } = query
+  const { vehicleName, vehicleType, vehicleBrand, locationName, locationId, stationId, pinCode, planIds, stationName, startDate, startTime, endDate, endTime } = query
   let momStartTime = moment(startTime ? startTime : "00:00 AM", "hh:mm A");
   let momEndTime = moment(endTime ? endTime : "00:00 AM", "hh:mm A");
   let getStartDate = startDate
@@ -1317,6 +1317,7 @@ const getVehicleTblData = async (query) => {
       let obj3 = { stationId: o.stationId }
       stationName ? obj3.stationName = stationName : null
       locationId ? obj3.locationId = locationId : null
+      pinCode ? obj3.pinCode = pinCode : null
       const find3 = await station.findOne({ ...obj3 }, {_id: 0})
       let find2 = null
       if (find3) {
@@ -1402,7 +1403,7 @@ const getLocationData = async (query) => {
 
 const getStationData = async (query) => {
   const obj = { status: 200, message: "data fetched successfully", data: [] }
-  const { locationName, stationName, stationId, address, city, pinCode, state, contact, locationId, _id } = query
+  const { locationName, stationName, stationId, address, city, pinCode, state, contact, locationId, _id, userId } = query
   let filter = {}
   _id ? filter._id = ObjectId(_id) : null
   locationId ? filter.locationId = ObjectId(locationId) : null
@@ -1412,6 +1413,7 @@ const getStationData = async (query) => {
   city ? filter.city = city : null
   state ? filter.state = state : null
   pinCode ? filter.pinCode = pinCode : null
+  userId ? filter.userId = userId : null
   const response = await station.find(filter)
   if (response) {
     const arr = []

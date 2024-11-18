@@ -149,7 +149,7 @@ exports.getAllBookingDuration = async (req, res) => {
 
 exports.getVehicleMasterData = async (req, res) => {
   try {
-    const result = await getVehicleMasterData(req.body);
+    const result = await getVehicleMasterData(req.query);
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({
